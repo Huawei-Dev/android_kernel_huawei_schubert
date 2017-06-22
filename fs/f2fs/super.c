@@ -2249,7 +2249,6 @@ static const struct fscrypt_operations f2fs_cryptops = {
 	.get_verify_context	= f2fs_get_verify_context,
 	.set_context		= f2fs_set_context,
 	.set_verify_context	= f2fs_set_verify_context,
-	.is_encrypted		= f2fs_encrypted_inode,
 	.is_inline_encrypted	= f2fs_inline_encrypted_inode,
 	.set_encrypted_corrupt	= f2fs_set_encrypted_corrupt_inode,
 	.is_encrypted_fixed	= f2fs_encrypted_fixed_inode,
@@ -2264,10 +2263,6 @@ static const struct fscrypt_operations f2fs_cryptops = {
 	.get_hwaa_attr		= f2fs_get_hwaa_attr,
 	.get_hwaa_flags		= f2fs_get_hwaa_flags,
 #endif
-};
-#else
-static const struct fscrypt_operations f2fs_cryptops = {
-	.is_encrypted	= f2fs_encrypted_inode,
 };
 #endif
 
@@ -3208,7 +3203,9 @@ try_onemore:
 #endif
 
 	sb->s_op = &f2fs_sops;
+#ifdef CONFIG_F2FS_FS_ENCRYPTION
 	sb->s_cop = &f2fs_cryptops;
+#endif
 	sb->s_xattr = f2fs_xattr_handlers;
 	sb->s_export_op = &f2fs_export_ops;
 	sb->s_magic = F2FS_SUPER_MAGIC;
