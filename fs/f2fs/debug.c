@@ -215,7 +215,6 @@ static void update_mem_info(struct f2fs_sb_info *sbi)
 	si->base_mem += sizeof(struct f2fs_sb_info) + sbi->sb->s_blocksize;
 	si->base_mem += 2 * sizeof(struct f2fs_inode_info);
 	si->base_mem += sizeof(*sbi->ckpt);
-	si->base_mem += sizeof(struct percpu_counter) * NR_COUNT_TYPE;
 
 	/* build sm */
 	si->base_mem += sizeof(struct f2fs_sm_info);
@@ -513,7 +512,7 @@ int f2fs_build_stats(struct f2fs_sb_info *sbi)
 	struct f2fs_super_block *raw_super = F2FS_RAW_SUPER(sbi);
 	struct f2fs_stat_info *si;
 
-	si = kzalloc(sizeof(struct f2fs_stat_info), GFP_KERNEL);
+	si = f2fs_kzalloc(sbi, sizeof(struct f2fs_stat_info), GFP_KERNEL);
 	if (!si)
 		return -ENOMEM;
 

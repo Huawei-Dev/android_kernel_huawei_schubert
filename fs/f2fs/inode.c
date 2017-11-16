@@ -22,6 +22,9 @@
 
 void f2fs_mark_inode_dirty_sync(struct inode *inode, bool sync)
 {
+	if (is_inode_flag_set(inode, FI_NEW_INODE))
+		return;
+
 	if (f2fs_inode_dirtied(inode, sync))
 		return;
 
@@ -478,6 +481,9 @@ void update_inode(struct inode *inode, struct page *node_page)
 	struct extent_tree *et = F2FS_I(inode)->extent_tree;
 
 	f2fs_wait_on_page_writeback(node_page, NODE, true);
+	set_page_dirty(node_page);
+
+	f2fs_inode_synced(inode);
 
 	set_page_dirty(node_page);
 
@@ -548,6 +554,7 @@ void update_inode(struct inode *inode, struct page *node_page)
 	/* deleted inode */
 	if (inode->i_nlink == 0)
 		clear_inline_node(node_page);
+
 }
 
 void update_inode_page(struct inode *inode)

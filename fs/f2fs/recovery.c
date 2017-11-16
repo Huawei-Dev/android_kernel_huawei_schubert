@@ -234,6 +234,20 @@ static int recover_quota_data(struct inode *inode, struct page *page)
 	return err;
 }
 
+static void recover_inline_flags(struct inode *inode, struct f2fs_inode *ri)
+{
+	if (ri->i_inline & F2FS_PIN_FILE)
+		set_inode_flag(inode, FI_PIN_FILE);
+	else
+		clear_inode_flag(inode, FI_PIN_FILE);
+	if (ri->i_inline & F2FS_DATA_EXIST)
+		set_inode_flag(inode, FI_DATA_EXIST);
+	else
+		clear_inode_flag(inode, FI_DATA_EXIST);
+	if (!(ri->i_inline & F2FS_INLINE_DOTS))
+		clear_inode_flag(inode, FI_INLINE_DOTS);
+}
+
 static int recover_inode(struct inode *inode, struct page *page)
 {
 	struct f2fs_inode *raw = F2FS_INODE(page);
@@ -249,7 +263,7 @@ static int recover_inode(struct inode *inode, struct page *page)
 	i_uid_write(inode, le32_to_cpu(raw->i_uid));
 	i_gid_write(inode, le32_to_cpu(raw->i_gid));
 
-	if (raw->i_inline & F2FS_EXTRA_ATTR) {/*lint -save -e574*/
+	if (raw->i_inline & F2FS_EXTRA_ATTR) {
 		if (f2fs_sb_has_project_quota(F2FS_I_SB(inode)->sb) &&
 			F2FS_FITS_IN_INODE(raw, le16_to_cpu(raw->i_extra_isize),
 								i_projid)) {
@@ -259,7 +273,7 @@ static int recover_inode(struct inode *inode, struct page *page)
 			F2FS_I(inode)->i_projid =
 				make_kprojid(&init_user_ns, i_projid);
 		}
-	}/*lint -restore*/
+	}
 
 	f2fs_i_size_write(inode, le64_to_cpu(raw->i_size));
 	inode->i_atime.tv_sec = le64_to_cpu(raw->i_atime);
@@ -274,6 +288,8 @@ static int recover_inode(struct inode *inode, struct page *page)
 	F2FS_I(inode)->i_gc_failures =
 				le16_to_cpu(raw->i_gc_failures);
 
+	recover_inline_flags(inode, raw);
+	
 	f2fs_mark_inode_dirty_sync(inode, true);
 
 	if (file_enc_name(inode))
@@ -281,8 +297,9 @@ static int recover_inode(struct inode *inode, struct page *page)
 	else
 		name = F2FS_INODE(page)->i_name;
 
-	f2fs_msg(inode->i_sb, KERN_NOTICE, "recover_inode: ino = %x, name = %s",
-			ino_of_node(page), name);
+	f2fs_msg(inode->i_sb, KERN_NOTICE,
+		"recover_inode: ino = %x, name = %s, inline = %x",
+			ino_of_node(page), name, raw->i_inline);
 	return 0;
 }
 
@@ -473,7 +490,7 @@ truncate_out:
 }
 
 static int do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
-					struct page *page, block_t blkaddr)
+					struct page *page)
 {
 	struct dnode_of_data dn;
 	struct node_info ni;
@@ -484,7 +501,7 @@ static int do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
 	if (IS_INODE(page)) {
 		recover_inline_xattr(inode, page);
 	} else if (f2fs_has_xattr_block(ofs_of_node(page))) {
-		err = recover_xattr_data(inode, page, blkaddr);
+		err = recover_xattr_data(inode, page);
 		if (!err)
 			recovered++;
 		goto out;
@@ -640,7 +657,7 @@ static int recover_data(struct f2fs_sb_info *sbi, struct list_head *inode_list,
 				break;
 			}
 		}
-		err = do_recover_data(sbi, entry->inode, page, blkaddr);
+		err = do_recover_data(sbi, entry->inode, page);
 		if (err) {
 			f2fs_put_page(page, 1);
 			break;

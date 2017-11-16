@@ -287,7 +287,7 @@ static int read_xattr_block(struct inode *inode, void *txattr_addr)
 static int lookup_all_xattrs(struct inode *inode, struct page *ipage,
 				unsigned int index, unsigned int len,
 				const char *name, struct f2fs_xattr_entry **xe,
-				void **base_addr, int *base_size)
+				void **base_addr)
 {
 	void *cur_addr, *txattr_addr, *last_addr = NULL;
 	nid_t xnid = F2FS_I(inode)->i_xattr_nid;
@@ -298,8 +298,8 @@ static int lookup_all_xattrs(struct inode *inode, struct page *ipage,
 	if (!size && !inline_size)
 		return -ENODATA;
 
-	*base_size = inline_size + size + XATTR_PADDING_SIZE;
-	txattr_addr = kzalloc(*base_size, GFP_F2FS_ZERO);
+	txattr_addr = f2fs_kzalloc(F2FS_I_SB(inode),
+			inline_size + size + XATTR_PADDING_SIZE, GFP_NOFS);
 	if (!txattr_addr)
 		return -ENOMEM;
 
@@ -311,10 +311,8 @@ static int lookup_all_xattrs(struct inode *inode, struct page *ipage,
 
 		*xe = __find_inline_xattr(inode, txattr_addr, &last_addr,
 						index, len, name);
-		if (*xe) {
-			*base_size = inline_size;
+		if (*xe)
 			goto check;
-		}
 	}
 
 	/* read from xattr node block */
@@ -436,8 +434,8 @@ static int read_all_xattrs(struct inode *inode, struct page *ipage,
 	void *txattr_addr;
 	int err;
 
-	txattr_addr = kzalloc(inline_size + size + XATTR_PADDING_SIZE,
-							GFP_F2FS_ZERO);
+	txattr_addr = f2fs_kzalloc(F2FS_I_SB(inode),
+			inline_size + size + XATTR_PADDING_SIZE, GFP_NOFS);
 	if (!txattr_addr)
 		return -ENOMEM;
 
@@ -570,7 +568,7 @@ int f2fs_getxattr(struct inode *inode, int index, const char *name,
 
 	down_read(&F2FS_I(inode)->i_xattr_sem);
 	error = lookup_all_xattrs(inode, ipage, index, len, name,
-				&entry, &base_addr, &base_size);
+				&entry, &base_addr);
 	up_read(&F2FS_I(inode)->i_xattr_sem);
 	if (error)
 		return error;
@@ -584,11 +582,6 @@ int f2fs_getxattr(struct inode *inode, int index, const char *name,
 
 	if (buffer) {
 		char *pval = entry->e_name + entry->e_name_len;
-
-		if (base_size - (pval - (char *)base_addr) < size) {
-			error = -ERANGE;
-			goto out;
-		}
 		memcpy(buffer, pval, size);
 	}
 	error = size;
@@ -715,7 +708,7 @@ static int __f2fs_setxattr(struct inode *inode, int index,
 			goto exit;
 		}
 
-		if (f2fs_xattr_value_same(here, value, size))
+		if (value && f2fs_xattr_value_same(here, value, size))
 			goto exit;
 	} else if ((flags & XATTR_REPLACE)) {
 		error = -ENODATA;

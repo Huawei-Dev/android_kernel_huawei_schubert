@@ -117,6 +117,7 @@ static int __init pw_init(void){
 
 char *fault_name[FAULT_MAX] = {
 	[FAULT_KMALLOC]		= "kmalloc",
+	[FAULT_KVMALLOC]	= "kvmalloc",
 	[FAULT_PAGE_ALLOC]	= "page alloc",
 	[FAULT_PAGE_GET]	= "page get",
 	[FAULT_ALLOC_BIO]	= "alloc bio",
@@ -1589,7 +1590,6 @@ skip:
 	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
 		(test_opt(sbi, POSIX_ACL) ? MS_POSIXACL : 0);
 
-	f2fs_msg(sb, KERN_ALERT, "f2fs remount successfully\n");
 	limit_reserve_root(sbi);
 	return 0;
 restore_gc:
@@ -2045,7 +2045,7 @@ static void f2fs_truncate_quota_inode_pages(struct super_block *sb)
 	}
 }
 
-int f2fs_get_projid(struct inode *inode, kprojid_t *projid)
+static int f2fs_get_projid(struct inode *inode, kprojid_t *projid)
 {
 	*projid = F2FS_I(inode)->i_projid;
 	return 0;
@@ -2805,14 +2805,15 @@ static int init_blkz_info(struct f2fs_sb_info *sbi, int devi)
 	if (nr_sectors & (bdev_zone_sectors(bdev) - 1))
 		FDEV(devi).nr_blkz++;
 
-	FDEV(devi).blkz_type = kmalloc(FDEV(devi).nr_blkz, GFP_KERNEL);
+	FDEV(devi).blkz_type = f2fs_kmalloc(sbi, FDEV(devi).nr_blkz,
+								GFP_KERNEL);
 	if (!FDEV(devi).blkz_type)
 		return -ENOMEM;
 
 #define F2FS_REPORT_NR_ZONES   4096
 
-	zones = kcalloc(F2FS_REPORT_NR_ZONES, sizeof(struct blk_zone),
-			GFP_KERNEL);
+	zones = f2fs_kzalloc(sbi, sizeof(struct blk_zone) *
+				F2FS_REPORT_NR_ZONES, GFP_KERNEL);
 	if (!zones)
 		return -ENOMEM;
 
@@ -2973,8 +2974,8 @@ static int f2fs_scan_devices(struct f2fs_sb_info *sbi)
 	 * Initialize multiple devices information, or single
 	 * zoned block device information.
 	 */
-	sbi->devs = kcalloc(max_devices, sizeof(struct f2fs_dev_info),
-				GFP_KERNEL);
+	sbi->devs = f2fs_kzalloc(sbi, sizeof(struct f2fs_dev_info) *
+						max_devices, GFP_KERNEL);
 	if (!sbi->devs)
 		return -ENOMEM;
 
@@ -3217,6 +3218,7 @@ try_onemore:
 	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
 		(test_opt(sbi, POSIX_ACL) ? MS_POSIXACL : 0);
 	memcpy(&sb->s_uuid, raw_super->uuid, sizeof(raw_super->uuid));
+	sb->s_iflags |= SB_I_CGROUPWB;
 
 	/* init f2fs-specific super block info */
 	sbi->valid_super_block = valid_super_block;
@@ -3237,8 +3239,9 @@ try_onemore:
 		int n = (i == META) ? 1: NR_TEMP_TYPE;
 		int j;
 
-		sbi->write_io[i] = kmalloc(n * sizeof(struct f2fs_bio_info),
-								GFP_KERNEL);
+		sbi->write_io[i] = f2fs_kmalloc(sbi,
+					n * sizeof(struct f2fs_bio_info),
+					GFP_KERNEL);
 		if (!sbi->write_io[i]) {
 			err = -ENOMEM;
 			goto free_options;
@@ -3260,14 +3263,14 @@ try_onemore:
 
 	err = init_percpu_info(sbi);
 	if (err)
-		goto free_options;
+		goto free_bio_info;
 
 	if (F2FS_IO_SIZE(sbi) > 1) {
 		sbi->write_io_dummy =
 			mempool_create_page_pool(2 * (F2FS_IO_SIZE(sbi) - 1), 0);
 		if (!sbi->write_io_dummy) {
 			err = -ENOMEM;
-			goto free_options;
+			goto free_percpu;
 		}
 	}
 
@@ -3353,18 +3356,16 @@ try_onemore:
 		goto free_nm;
 	}
 
-	f2fs_join_shrinker(sbi);
-
 	err = f2fs_build_stats(sbi);
 	if (err)
-		goto free_nm;
+		goto free_node_inode;
 
 	/* read root inode and dentry */
 	root = f2fs_iget(sb, F2FS_ROOT_INO(sbi));
 	if (IS_ERR(root)) {
 		f2fs_msg(sb, KERN_ERR, "Failed to read root inode");
 		err = PTR_ERR(root);
-		goto free_node_inode;
+		goto free_stats;
 	}
 	if (!S_ISDIR(root->i_mode) || !root->i_blocks ||
 			!root->i_size || !root->i_nlink) {
@@ -3474,7 +3475,9 @@ skip_recovery:
 		}
 	}
 
-	f2fs_msg(sbi->sb, KERN_ALERT, "F2fs successfully mounted with checkpoint version = %llx",
+	f2fs_join_shrinker(sbi);
+
+	f2fs_msg(sbi->sb, KERN_NOTICE, "Mounted with checkpoint version = %llx",
 				cur_cp_version(F2FS_CKPT(sbi)));
 	f2fs_update_time(sbi, CP_TIME);
 	f2fs_update_time(sbi, REQ_TIME);
@@ -3509,14 +3512,12 @@ free_meta:
 free_root_inode:
 	dput(sb->s_root);
 	sb->s_root = NULL;
-free_node_inode:
-	truncate_inode_pages_final(NODE_MAPPING(sbi));
-	mutex_lock(&sbi->umount_mutex);
-	release_ino_entry(sbi, true);
-	f2fs_leave_shrinker(sbi);
-	iput(sbi->node_inode);
-	mutex_unlock(&sbi->umount_mutex);
+free_stats:
 	f2fs_destroy_stats(sbi);
+free_node_inode:
+	release_ino_entry(sbi, true);
+	truncate_inode_pages_final(NODE_MAPPING(sbi));
+	iput(sbi->node_inode);
 free_nm:
 	destroy_node_manager(sbi);
 free_sm:
@@ -3529,10 +3530,12 @@ free_meta_inode:
 	iput(sbi->meta_inode);
 free_io_dummy:
 	mempool_destroy(sbi->write_io_dummy);
-free_options:
+free_percpu:
+	destroy_percpu_info(sbi);
+free_bio_info:
 	for (i = 0; i < NR_PAGE_TYPE; i++)
 		kfree(sbi->write_io[i]);
-	destroy_percpu_info(sbi);
+free_options:
 #ifdef CONFIG_QUOTA
 	for (i = 0; i < MAXQUOTAS; i++)
 		kfree(sbi->s_qf_names[i]);

@@ -1264,6 +1264,11 @@ static int move_data_block(struct inode *inode, block_t bidx,
 		goto out;
 	}
 
+	if (f2fs_is_pinned_file(inode)) {
+		f2fs_pin_file_control(inode, true);
+		goto out;
+	}
+
 	set_new_dnode(&dn, inode, NULL, NULL, 0);
 	err = get_dnode_of_data(&dn, bidx, LOOKUP_NODE);
 	if (err) {
@@ -1348,7 +1353,12 @@ static int move_data_block(struct inode *inode, block_t bidx,
 	fio.op = REQ_OP_WRITE;
 	fio.op_flags = REQ_SYNC;
 	fio.new_blkaddr = newaddr;
-	f2fs_submit_page_write(&fio);
+	err = f2fs_submit_page_write(&fio);
+	if (err) {
+		if (PageWriteback(fio.encrypted_page))
+			end_page_writeback(fio.encrypted_page);
+		goto put_page_out;
+	}
 
 	f2fs_update_iostat(fio.sbi, FS_GC_DATA_IO, F2FS_BLKSIZE);
 
