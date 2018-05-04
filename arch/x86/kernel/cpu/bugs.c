@@ -613,8 +613,7 @@ int arch_prctl_spec_ctrl_set(struct task_struct *task, unsigned long which,
 #ifdef CONFIG_SECCOMP
 void arch_seccomp_spec_mitigate(struct task_struct *task)
 {
-	if (ssb_mode == SPEC_STORE_BYPASS_SECCOMP)
-		ssb_prctl_set(task, PR_SPEC_FORCE_DISABLE);
+	ssb_prctl_set(task, PR_SPEC_FORCE_DISABLE);
 }
 #endif
 
@@ -623,7 +622,6 @@ static int ssb_prctl_get(struct task_struct *task)
 	switch (ssb_mode) {
 	case SPEC_STORE_BYPASS_DISABLE:
 		return PR_SPEC_DISABLE;
-	case SPEC_STORE_BYPASS_SECCOMP:
 	case SPEC_STORE_BYPASS_PRCTL:
 		if (task_spec_ssb_force_disable(task))
 			return PR_SPEC_PRCTL | PR_SPEC_FORCE_DISABLE;
