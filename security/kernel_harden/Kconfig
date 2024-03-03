@@ -11,13 +11,6 @@ config HUAWEI_KERNEL_STACK_RANDOMIZE
     help
     Randomizes the base address of process's kernel stack.
 
-config HUAWEI_KERNEL_STACK_RANDOMIZE_STRONG
-    bool "stack randomize strong"
-    depends on ARM64 && !KASAN
-    default n
-    help
-    Randomizes the base address of process's thread_info struct.
-
 config HUAWEI_HIDESYMS
 	bool "hide symbols"
 	default n
