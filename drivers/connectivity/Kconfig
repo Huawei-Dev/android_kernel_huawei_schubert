@@ -16,11 +16,6 @@ config HI110X_DRIVER_PATH
 	string "Hi1102 Kernel Driver Path"
 	default "drivers/connectivity/hisi"
 
-config ARCH_KIRIN_PCIE
-    bool "kirin pcie interface support"
-    default n
-    depends on PCI
-
 config HI110X_GPS_REFCLK
   bool "Hisilicon 110X gps refclk feature"
   default y
