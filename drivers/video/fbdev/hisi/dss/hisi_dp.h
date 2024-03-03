@@ -25,9 +25,6 @@
 #include "dp/drm_dp_helper_additions.h"
 #include "dp/reg.h"
 #include "dp/dbg.h"
-#include <huawei_platform/dp_source/dp_dsm.h>
-#include <huawei_platform/dp_source/dp_factory.h>
-#include <huawei_platform/dp_source/dp_debug.h>
 #include <drm/drm_fixed.h>
 #include <drm/drm_dp_mst_helper.h>
 
