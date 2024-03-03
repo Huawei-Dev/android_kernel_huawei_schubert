@@ -28,7 +28,6 @@
 
 #include "wbc_hw_hook.h"
 #include "chr_netlink.h"
-#include "../net/netbooster/video_acceleration.h"
 
 #ifndef DEBUG
 #define DEBUG
