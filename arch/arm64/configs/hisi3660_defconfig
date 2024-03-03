@@ -3254,8 +3254,6 @@ CONFIG_HI_VCODEC_VDEC_HI3660=y
 # Hisilicon video venc support
 #
 CONFIG_HI_VCODEC_VENC_HI3660=y
-# CONFIG_IMAGINATION_D5500_VCODEC is not set
-# CONFIG_IMAGINATION_D5500_DRM_VCODEC is not set
 
 #
 # Graphics support
