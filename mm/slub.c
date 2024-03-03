@@ -44,9 +44,6 @@
 
 #include <linux/jiffies.h>
 
-#if defined(CONFIG_HW_SLUB_DF) || defined(CONFIG_HW_SLUB_SANITIZE)
-#include <chipset_common/security/upload_double_free.h>
-#endif
 #include <chipset_common/security/check_root.h>
 
 #ifdef CONFIG_HW_SLUB_DF
@@ -293,7 +290,6 @@ static inline void set_freepointer(struct kmem_cache *s, void *object, void *fp)
 		s->flags |= SLAB_CLEAR;
 #endif
 		WARN_ON(1);
-		upload_double_free_log(s,"light double free checked");
 		return;
 	}
 #endif
@@ -346,7 +342,6 @@ static inline bool hw_check_canary(struct kmem_cache *s, void *object, unsigned 
 
 	if (*canary == hw_get_canary_value(canary, value))
 	{
-		upload_double_free_log(s, "harden double free checked");
 #ifdef CONFIG_HW_SLUB_DF_BUGON
 		BUG_ON(1);
 #endif
@@ -366,7 +361,6 @@ static inline bool hw_check_and_set_canary(struct kmem_cache *s, void *object, u
 
 	if (*canary == hw_get_canary_value(canary, value))
 	{
-		upload_double_free_log(s, "harden double free checked");
 #ifdef CONFIG_HW_SLUB_DF_BUGON
 		BUG_ON(1);
 #endif
