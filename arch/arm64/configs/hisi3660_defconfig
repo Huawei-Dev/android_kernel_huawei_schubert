@@ -4957,11 +4957,6 @@ CONFIG_HISI_SECS_CTRL=y
 # CONFIG_SECURE_TEST is not set
 
 #
-# NPU Drivers
-#
-# CONFIG_NPU_DEVDRV is not set
-
-#
 # Huawei Platform Drivers
 #
 CONFIG_HUAWEI_PLATFORM=y
