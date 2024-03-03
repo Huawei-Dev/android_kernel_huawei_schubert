@@ -51,12 +51,5 @@ config HUAWEI_HIDESYMS_DEBUGFS
 	default n
 	help
 	Turn on the debugfs interface for hide symbols
-
-config HUAWEI_HARDEN_DOUBLE_FREE_CHECK_DEBUGFS
-	bool "harden double free check debugfs interface"
-	depends on DEBUG_FS
-	default n
-	help
-	The debugfs interface for harden double free check feature.
 endmenu
 #a blank line must be existed
