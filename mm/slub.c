@@ -46,10 +46,6 @@
 
 #include <chipset_common/security/check_root.h>
 
-#ifdef CONFIG_HW_SLUB_DF
-static void set_harden_double_free_check_flags(bool status);
-static bool fill_random_malloc = false;
-#endif
 /*
  * Lock order:
  *   1. slab_mutex (Global Mutex)
@@ -272,82 +268,6 @@ static inline void set_freepointer(struct kmem_cache *s, void *object, void *fp)
 {
 	*(void **)(object + s->offset) = fp;
 }
-
-#ifdef CONFIG_HW_SLUB_DF
-/*object size more than 16*/
-static inline unsigned long *hw_get_canary(struct kmem_cache *s, void *object)
-{
-	return (unsigned long *)(object + sizeof(void *));
-}
-static inline unsigned long hw_get_canary_value(const void *canary, unsigned long value)
-{
-	return (value ^ (unsigned long)canary) & CANARY_MASK;
-}
-static inline bool no_hw_slub_df_check(struct kmem_cache *s)
-{
-	if(s->flags & (SLAB_NOTRACK | DEBUG_DEFAULT_FLAGS | SLAB_DESTROY_BY_RCU)){
-		return true;
-	}
-	if(unlikely(s->ctor)){
-		return true;
-	}
-
-	if(unlikely(s->object_size < 2*sizeof(void *))){
-		return true;
-	}
-	return false;
-}
-static inline void hw_set_canary(struct kmem_cache *s, void *object, unsigned long value)
-{
-	unsigned long *canary;
-	if(no_hw_slub_df_check(s))
-		return;
-
-	canary = hw_get_canary(s, object);
-	*canary = hw_get_canary_value(canary, value);
-}
-
-static inline bool hw_check_canary(struct kmem_cache *s, void *object, unsigned long value)
-{
-	unsigned long *canary;
-
-	if(no_hw_slub_df_check(s)){
-		return true;
-	}
-
-	canary = hw_get_canary(s, object);
-
-	if (*canary == hw_get_canary_value(canary, value))
-	{
-#ifdef CONFIG_HW_SLUB_DF_BUGON
-		BUG_ON(1);
-#endif
-		return false;
-	}
-	return true;
-}
-static inline bool hw_check_and_set_canary(struct kmem_cache *s, void *object, unsigned long value)
-{
-	unsigned long *canary;
-
-	if(no_hw_slub_df_check(s)){
-		return true;
-	}
-
-	canary = hw_get_canary(s, object);
-
-	if (*canary == hw_get_canary_value(canary, value))
-	{
-#ifdef CONFIG_HW_SLUB_DF_BUGON
-		BUG_ON(1);
-#endif
-		return false;
-	}
-	*canary = hw_get_canary_value(canary, value);
-	return true;
-}
-
-#endif
 
 /* Loop over all objects in a slab */
 #define for_each_object(__p, __s, __addr, __objects) \
@@ -1470,11 +1390,6 @@ static void setup_object(struct kmem_cache *s, struct page *page,
 				void *object)
 {
 	setup_object_debug(s, page, object);
-#ifdef CONFIG_HW_SLUB_DF
-	if (unlikely(s->flags & SLAB_DOUBLEFREE_CHECK)) {
-		hw_set_canary(s, object, s->hw_random_free);
-	}
-#endif
 	kasan_init_slab_obj(s, object);
 	if (unlikely(s->ctor)) {
 		kasan_unpoison_object_data(s, object);
@@ -2827,11 +2742,6 @@ redo:
 		prefetch_freepointer(s, next_object);
 		stat(s, ALLOC_FASTPATH);
 	}
-#ifdef CONFIG_HW_SLUB_DF
-	if (unlikely(fill_random_malloc) && object) {
-		hw_set_canary(s, object, s->hw_random_malloc);
-	}
-#endif
 	if (unlikely(gfpflags & __GFP_ZERO) && object)
 		memset(object, 0, s->object_size);
 
@@ -3044,10 +2954,6 @@ static __always_inline void do_slab_free(struct kmem_cache *s,
 	struct kmem_cache_cpu *c;
 	unsigned long tid;
 
-#ifdef CONFIG_HW_SLUB_DF
-	if (unlikely(s->flags & SLAB_DOUBLEFREE_CHECK) && hw_check_and_set_canary(s, head, s->hw_random_free) == false)
-			return;
-#endif
 redo:
 	/*
 	 * Determine the currently cpus per cpu slab.
@@ -3268,13 +3174,6 @@ int kmem_cache_alloc_bulk(struct kmem_cache *s, gfp_t flags, size_t size,
 	}
 	c->tid = next_tid(c->tid);
 	local_irq_enable();
-#ifdef CONFIG_HW_SLUB_DF
-	if (unlikely(fill_random_malloc)) {
-		for (k = 0; k < i; k++) {
-			hw_set_canary(s, p[k], s->hw_random_malloc);
-		}
-	}
-#endif
 	/* Clear memory outside IRQ disabled fastpath loop */
 	if (unlikely(flags & __GFP_ZERO)) {
 		int j;
@@ -3486,11 +3385,6 @@ static void early_kmem_cache_node_alloc(int node)
 	init_object(kmem_cache_node, n, SLUB_RED_ACTIVE);
 	init_tracking(kmem_cache_node, n);
 #endif
-#ifdef CONFIG_HW_SLUB_DF
-	if (unlikely(fill_random_malloc)) {
-		hw_set_canary(kmem_cache_node, n, kmem_cache_node->hw_random_malloc);
-	}
-#endif
 	kasan_kmalloc(kmem_cache_node, n, sizeof(struct kmem_cache_node),
 		      GFP_KERNEL);
 	init_kmem_cache_node(n);
@@ -3682,10 +3576,6 @@ static int kmem_cache_open(struct kmem_cache *s, unsigned long flags)
 	s->flags = kmem_cache_flags(s->size, flags, s->name, s->ctor);
 	s->reserved = 0;
 
-#ifdef CONFIG_HW_SLUB_DF
-	s->hw_random_malloc = get_random_long();
-	s->hw_random_free = get_random_long();
-#endif
 	if (need_reserve_slab_rcu && (s->flags & SLAB_DESTROY_BY_RCU))
 		s->reserved = sizeof(struct rcu_head);
 
@@ -6025,46 +5915,3 @@ void show_slab(bool verbose)
 	}
 }
 #endif /* CONFIG_SLABINFO */
-
-#ifdef CONFIG_HW_SLUB_DF
-static void set_harden_double_free_check_flags(bool status)
-{
-	struct kmem_cache *s;
-	if (status)
-	{
-		fill_random_malloc = true;
-		list_for_each_entry(s, &slab_caches, list)
-			s->flags = s->flags | SLAB_DOUBLEFREE_CHECK;
-#ifdef CONFIG_SLUB_DEBUG
-		slub_debug = slub_debug | SLAB_DOUBLEFREE_CHECK;
-#endif
-	}
-	else
-	{
-		list_for_each_entry(s, &slab_caches, list)
-			s->flags = s->flags & ~SLAB_DOUBLEFREE_CHECK;
-#ifdef CONFIG_SLUB_DEBUG
-		slub_debug = slub_debug & ~SLAB_DOUBLEFREE_CHECK;
-#endif
-	}
-}
-
-int set_harden_double_free_status(bool status)
-{
-#ifdef CONFIG_SLUB_DEBUG
-	if (!status && !(slub_debug & SLAB_DOUBLEFREE_CHECK))
-	{
-		pr_err("the harden double free feature status is already disabled\n");
-		return 0;
-	}
-
-	if (status && (slub_debug & SLAB_DOUBLEFREE_CHECK))
-	{
-		pr_err("the harden double free feature status is already enabled\n");
-		return 0;
-	}
-#endif
-	set_harden_double_free_check_flags(status);
-	return 0;
-}
-#endif

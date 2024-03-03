@@ -6,9 +6,6 @@
  */
 
 #include "hw_kernel_stp_proc.h"
-#ifdef CONFIG_HW_SLUB_DF
-#include <linux/slub_def.h> /* for harden double-free check */
-#endif
 
 static const char *TAG = "kernel_stp_proc";
 static struct proc_dir_entry *g_proc_entry;
@@ -53,9 +50,6 @@ static ssize_t kernel_stp_proc_write(struct file *file, const char __user *buffe
 		ret = kernel_stp_trigger(data.s.para);
 		break;
 	case HARDEN_DBLFREE_CHECK:
-#ifdef CONFIG_HW_SLUB_DF
-		ret = set_harden_double_free_status(data.s.para);
-#endif
 		break;
 	default:
 		ret = -EINVAL;

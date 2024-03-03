@@ -28,10 +28,6 @@
 #define SLAB_STORE_USER		0x00010000UL	/* DEBUG: Store the last owner for bug hunting */
 #define SLAB_PANIC		0x00040000UL	/* Panic if kmem_cache_create() fails */
 
-#ifdef CONFIG_HW_SLUB_DF
-#define SLAB_DOUBLEFREE_CHECK              0x00001000UL    /*Enable double free check dynamically*/
-#endif
-
 /*
  * SLAB_DESTROY_BY_RCU - **WARNING** READ THIS!
  *
