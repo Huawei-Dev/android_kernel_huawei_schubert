@@ -4957,11 +4957,6 @@ CONFIG_HISI_SECS_CTRL=y
 # CONFIG_SECURE_TEST is not set
 
 #
-# Hisilicon Performace Control
-#
-CONFIG_HISI_DUMMY_KO=m
-
-#
 # NPU Drivers
 #
 # CONFIG_NPU_DEVDRV is not set
