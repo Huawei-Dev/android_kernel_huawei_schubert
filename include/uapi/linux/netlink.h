@@ -61,24 +61,20 @@
 #define NETLINK_EMCOM 34
 #endif
 
-#ifdef CONFIG_HW_NETBOOSTER_MODULE
-#define NETLINK_NETBOOSTER  35
-#endif
-
 #ifdef CONFIG_HISI_CAMERA_VL53L0_970
-#define NETLINK_ST_LASER_DRIVER 36
+#define NETLINK_ST_LASER_DRIVER 35
 #endif
 
 #ifdef CONFIG_HUAWEI_EIMA_ACCESS_CONTROL
-#define NETLINK_EIMA 37
+#define NETLINK_EIMA 36
 #endif
 
 #if (defined(CONFIG_HW_CPULOAD_NOTI) || defined(CONFIG_HW_VIP_THREAD) \
         || defined(CONFIG_HW_IAWARE_THREAD_BOOST))
 #define NETLINK_HW_IAWARE_CPU 33
-#define MAX_LINKS 38
+#define MAX_LINKS 37
 #else
-#define MAX_LINKS 38
+#define MAX_LINKS 37
 #endif
 
 struct sockaddr_nl {
