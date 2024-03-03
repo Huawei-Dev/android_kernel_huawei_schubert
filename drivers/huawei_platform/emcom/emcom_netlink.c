@@ -19,10 +19,6 @@
 #include <huawei_platform/emcom/emcom_xengine.h>
 #endif
 
-#ifdef CONFIG_HUAWEI_NWEVAL
-#include <huawei_platform/emcom/network_evaluation.h>
-#endif
-
 #ifdef CONFIG_HW_NETWORK_MEASUREMENT
 #include <huawei_platform/emcom/smartcare/smartcare.h>
 #endif
@@ -104,9 +100,6 @@ static void emcom_common_evt_proc(struct nlmsghdr *nlh, uint8_t *pdata, uint16_t
             /*save user space progress pid when register netlink socket.*/
             g_user_space_pid = nlh->nlmsg_pid;
             EMCOM_LOGD("emcom netlink receive reg packet: g_user_space_pid = %d\n",nlh->nlmsg_pid);
-            #ifdef CONFIG_HUAWEI_NWEVAL
-            nweval_on_dk_connected();
-            #endif
 #ifdef CONFIG_SMART_MP
             Emcom_Xengine_SmartMpOnDK_Connect();
 #endif
@@ -162,11 +155,6 @@ static void kernel_emcom_receive(struct sk_buff *__skb)
                 #ifdef CONFIG_HW_NETWORK_MEASUREMENT
                 case EMCOM_SUB_MOD_SMARTCARE:
                     smartcare_event_process(nlh->nlmsg_type, packet, data_len);
-                    break;
-                #endif
-                #ifdef CONFIG_HUAWEI_NWEVAL
-                case EMCOM_SUB_MOD_NWEVAL:
-                    nweval_event_process(nlh->nlmsg_type, packet, data_len);
                     break;
                 #endif
                 default:
@@ -263,10 +251,6 @@ static int __init emcom_netlink_module_init(void)
 
     #ifdef CONFIG_HUAWEI_XENGINE
     Emcom_Xengine_Init();
-    #endif
-
-    #ifdef CONFIG_HUAWEI_NWEVAL
-    nweval_init();
     #endif
 
     #ifdef CONFIG_HW_NETWORK_MEASUREMENT

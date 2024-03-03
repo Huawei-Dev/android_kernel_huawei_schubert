@@ -98,10 +98,6 @@
 #include <net/mptcp_v6.h>
 #endif
 
-#ifdef CONFIG_HUAWEI_NWEVAL
-#include<huawei_platform/emcom/network_evaluation.h>
-#endif
-
 int sysctl_tcp_timestamps __read_mostly = 1;
 int sysctl_tcp_window_scaling __read_mostly = 1;
 int sysctl_tcp_sack __read_mostly = 1;
@@ -3203,9 +3199,6 @@ static inline bool tcp_ack_update_rtt(struct sock *sk, const int flag,
 #ifdef CONFIG_HW_NETWORK_MEASUREMENT
 	if (unlikely(nm_sample_on(sk)))
 		set_syn_rtt(sk, seq_rtt_us);
-#endif
-#ifdef CONFIG_HUAWEI_NWEVAL
-	nweval_update_rtt(sk, seq_rtt_us);
 #endif
 	/* ca_rtt_us >= 0 is counting on the invariant that ca_rtt_us is
 	 * always taken together with ACK, SACK, or TS-opts. Any negative
