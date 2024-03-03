@@ -18,13 +18,6 @@ config HUAWEI_KERNEL_STACK_RANDOMIZE_STRONG
     help
     Randomizes the base address of process's thread_info struct.
 
-config HUAWEI_KERNEL_STACK_NX
-    bool "stack non executeable"
-    depends on ARM64
-    default n
-    help
-    Set process's kernel stack with non execution.
-
 config HUAWEI_HIDESYMS
 	bool "hide symbols"
 	default n
