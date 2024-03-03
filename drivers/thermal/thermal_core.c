@@ -45,10 +45,6 @@
 #include "thermal_core.h"
 #include "thermal_hwmon.h"
 
-#ifdef CONFIG_HISI_PERF_CTRL
-#include "../hisi/perf_ctrl/perf_ctrl.h"
-#endif
-
 MODULE_AUTHOR("Zhang Rui");
 MODULE_DESCRIPTION("Generic thermal management sysfs support");
 MODULE_LICENSE("GPL v2");
@@ -208,25 +204,6 @@ unsigned int ipa_freq_limit(int actor, unsigned int target_freq)
 	return min(target_freq, g_ipa_freq_limit[actor]);/*lint !e1058*/
 }
 EXPORT_SYMBOL(ipa_freq_limit);
-#endif
-
-#ifdef CONFIG_HISI_PERF_CTRL
-int get_ipa_status(struct ipa_stat *status)
-{
-#ifdef CONFIG_HISI_IPA_THERMAL
-	status->cluster0 = g_ipa_freq_limit[0];
-	status->cluster1 = g_ipa_freq_limit[1];
-	if (ipa_get_actor_id("gpu") == 3) {
-		status->cluster2 = g_ipa_freq_limit[2];
-		status->gpu = g_ipa_freq_limit[3];
-	} else {
-		status->cluster2 = 0;
-		status->gpu = g_ipa_freq_limit[2];
-	}
-#endif
-	return 0;
-}
-EXPORT_SYMBOL(get_ipa_status);
 #endif
 
 static struct thermal_governor *__find_governor(const char *name)

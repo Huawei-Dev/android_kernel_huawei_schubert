@@ -3,7 +3,6 @@
 
 #include <linux/cpufreq.h>
 #include <linux/devfreq.h>
-#include <linux/hisi/hisi_perf_ctrl.h>
 
 #define MAX_DRG_MARGIN		1024U
 #define DRG_CAPACITY_THRES	500L
