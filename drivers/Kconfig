@@ -222,8 +222,6 @@ source "drivers/huawei_platform/Kconfig"
 
 source "drivers/dsm/Kconfig"
 
-source "drivers/wpa_dmd/Kconfig"
-
 source "drivers/log/Kconfig"
 
 source "drivers/connectivity/Kconfig"
