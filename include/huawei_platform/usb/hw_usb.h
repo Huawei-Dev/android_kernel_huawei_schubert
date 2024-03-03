@@ -48,14 +48,6 @@ struct hw_usb_device {
 	char usb_speed[HW_USB_STR_MAX_LEN];
 };
 
-#ifdef CONFIG_HUAWEI_USB
-extern void hw_usb_host_abnormal_event_notify(unsigned int event);
-extern void hw_usb_set_usb_speed(unsigned int usb_speed);
-extern int hw_usb_ldo_supply_enable(enum hw_usb_ldo_ctrl_type type);
-extern int hw_usb_ldo_supply_disable(enum hw_usb_ldo_ctrl_type type);
-
-#else
-
 static inline void hw_usb_host_abnormal_event_notify(unsigned int event)
 {
 }
@@ -73,6 +65,5 @@ static inline int hw_usb_ldo_supply_disable(enum hw_usb_ldo_ctrl_type type)
 {
 	return 0;
 }
-#endif /* CONFIG_HUAWEI_USB */
 
 #endif /* _HW_USB_H_ */

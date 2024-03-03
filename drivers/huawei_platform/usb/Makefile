@@ -6,7 +6,6 @@ obj-$(CONFIG_OTG_GPIO_ID)	+= otg_gpio_id/
 obj-$(CONFIG_SUPERSWITCH)	+= superswitch/
 obj-$(CONFIG_OTG_DUAL_ROLE)	+= otg_dual_role/
 obj-$(CONFIG_POGO_PIN)	+= pogopin/
-obj-$(CONFIG_HUAWEI_USB)  += hw_usb/
 obj-$(CONFIG_HUAWEI_YCABLE) += hw_ycable/
 obj-$(CONFIG_HUAWEI_HISHOW) += hw_hishow/
 obj-$(CONFIG_HW_SW_DEVICES) += sw/
