@@ -62,10 +62,6 @@
 #include <hwnet/ipv4/wifi_delayst.h>
 #endif
 
-#ifdef CONFIG_HUAWEI_FEATURE_PRINT_PID_NAME
-#include <huawei_platform/power/pid_socket/pid_socket.h>
-#endif
-
 /* People can turn this off for buggy TCP's found in printers etc. */
 int sysctl_tcp_retrans_collapse __read_mostly = 1;
 
@@ -1091,9 +1087,6 @@ static int __tcp_transmit_skb(struct sock *sk, struct sk_buff *skb,
 	memset(&opts, 0, sizeof(opts));
 
 	if (unlikely(tcb->tcp_flags & TCPHDR_SYN)) {
-#ifdef CONFIG_HUAWEI_FEATURE_PRINT_PID_NAME
-		print_process_pid_name(inet);
-#endif
 		tcp_options_size = tcp_syn_options(sk, skb, &opts, &md5);
 	}
 	else
