@@ -9,7 +9,6 @@ obj-$(CONFIG_HUAWEI_CPU_BUCK)	+= cpu_buck/
 obj-$(CONFIG_BOOST_5V)	+= boost_5v/
 obj-$(CONFIG_HUAWEI_DSM)	+= power_dsm/
 obj-$(CONFIG_HUAWEI_POWER_THERMALZONE)	+= power_thermalzone/
-obj-$(CONFIG_HUAWEI_POWER_DEBUG)	+= power_debug/
 obj-$(CONFIG_HUAWEI_SOC_CONTROL) += hardware_monitor/
 
 ifeq ($(HLTHERM_RUNTEST),true)
