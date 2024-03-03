@@ -89,7 +89,7 @@ config ROW_OPTIMIZATION
 
 config ROW_VIP_QUEUE
 	bool "ROW scheduler add vip queue"
-	depends on DEFAULT_ROW && BLK_DEV_THROTTLING=y && HW_QOS_THREAD
+	depends on DEFAULT_ROW && BLK_DEV_THROTTLING=y
 	default n
 	---help---
 		The row vip queue is to use the request REQ_VIP flag to

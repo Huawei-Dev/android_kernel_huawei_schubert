@@ -956,7 +956,7 @@ static const struct file_operations proc_mem_operations = {
 	.release	= mem_release,
 };
 
-#if ((defined(CONFIG_HW_VIP_THREAD)) || defined(CONFIG_HW_QOS_THREAD))
+#ifdef CONFIG_HW_VIP_THREAD
 static int proc_static_vip_show(struct seq_file *m, void *v)
 {
 	struct inode *inode = m->private;
@@ -2057,7 +2057,7 @@ int pid_revalidate(struct dentry *dentry, unsigned int flags)
 			inode->i_gid = GLOBAL_ROOT_GID;
 		}
 
-#if ((defined(CONFIG_HW_VIP_THREAD)) || (defined(CONFIG_HW_QOS_THREAD)))
+#ifdef CONFIG_HW_VIP_THREAD
 		if (is_special_entry(dentry, "static_vip"))
 		{
 			inode->i_uid = GLOBAL_SYSTEM_UID;
@@ -3660,7 +3660,7 @@ static const struct pid_entry tid_base_stuff[] = {
 #ifdef CONFIG_CPU_FREQ_TIMES
 	ONE("time_in_state", 0444, proc_time_in_state_show),
 #endif
-#if ((defined(CONFIG_HW_VIP_THREAD)) || (defined(CONFIG_HW_QOS_THREAD)))
+#ifdef CONFIG_HW_VIP_THREAD
 	REG("static_vip", S_IRUGO | S_IWGRP, proc_static_vip_operations),
 #endif
 };

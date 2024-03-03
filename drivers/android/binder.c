@@ -93,9 +93,7 @@
 #ifdef CONFIG_HUAWEI_KSTATE
 #include <huawei_platform/power/hw_kcollect.h>
 #endif
-#ifdef CONFIG_HW_QOS_THREAD
-#include <chipset_common/hwqos/hwqos_common.h>
-#endif
+
 #ifdef CONFIG_HW_BINDER_FG_REQ_FIRST
 #define MAX_FG_WORKS_PROCEEDED 2
 
@@ -1064,23 +1062,6 @@ static inline struct list_head *binder_proc_select_worklist_ilocked(
 	return &proc->fg_todo;
 }
 
-#ifdef CONFIG_HW_QOS_THREAD
-static inline void binder_thread_check_and_set_dynamic_qos(
-	struct binder_thread *thread, struct binder_thread *from,
-	unsigned int oneway)
-{
-	if ((!oneway) && from)
-		dynamic_qos_enqueue(thread->task, from->task,
-			DYNAMIC_QOS_BINDER);
-}
-static inline void binder_thread_check_and_remove_dynamic_qos(
-	struct binder_thread *thread, unsigned int oneway)
-{
-	if (!oneway)
-		dynamic_qos_dequeue(thread->task, DYNAMIC_QOS_BINDER);
-}
-
-#endif
 #ifdef CONFIG_HW_VIP_THREAD
 static inline void binder_thread_check_and_set_dynamic_vip(
 	struct binder_thread *thread, struct binder_thread *from)
@@ -3007,10 +2988,7 @@ static bool binder_proc_transaction(struct binder_transaction *t,
 		binder_transaction_priority(thread->task, t, node_prio,
 					    node->inherit_rt);
 		binder_enqueue_thread_work_ilocked(thread, &t->work);
-#ifdef CONFIG_HW_QOS_THREAD
-		binder_thread_check_and_set_dynamic_qos(thread,
-			t->from, oneway);
-#endif
+
 #ifdef CONFIG_HW_BINDER_FG_REQ_FIRST
 #ifdef CONFIG_HW_VIP_THREAD
 		binder_thread_check_and_set_dynamic_vip(thread, t->from);
@@ -3020,10 +2998,6 @@ static bool binder_proc_transaction(struct binder_transaction *t,
 #ifdef CONFIG_HW_BINDER_FG_REQ_FIRST
 		bool do_enqueue = false;
 
-#ifdef CONFIG_HW_QOS_THREAD
-		do_enqueue = binder_enable_fg_switch && QOS_SCHED_LOCK_ENABLE &&
-			(!oneway) && (get_task_qos(current) == VALUE_QOS_CRITICAL);
-#endif
 #ifdef CONFIG_HW_VIP_THREAD
 		do_enqueue = do_enqueue || (test_task_vip(current) &&
 			(!oneway) && binder_enable_fg_switch);
@@ -3640,18 +3614,10 @@ static void binder_transaction(struct binder_proc *proc,
 	t->work.type = BINDER_WORK_TRANSACTION;
 
 	if (reply) {
-#ifdef CONFIG_HW_QOS_THREAD
-		unsigned int oneway_flag = t->flags & TF_ONE_WAY;
-
-#endif
 		binder_enqueue_thread_work(thread, tcomplete);
 		binder_inner_proc_lock(target_proc);
 		if (target_thread->is_dead) {
 			binder_inner_proc_unlock(target_proc);
-#ifdef CONFIG_HW_QOS_THREAD
-			binder_thread_check_and_remove_dynamic_qos(thread,
-				oneway_flag);
-#endif
 			goto err_dead_proc_or_thread;
 		}
 		BUG_ON(t->buffer->async_transaction != 0);
@@ -3662,9 +3628,6 @@ static void binder_transaction(struct binder_proc *proc,
 		binder_enqueue_thread_work_ilocked(target_thread, &t->work);
 		binder_inner_proc_unlock(target_proc);
 		wake_up_interruptible_sync(&target_thread->wait);
-#ifdef CONFIG_HW_QOS_THREAD
-		binder_thread_check_and_remove_dynamic_qos(thread, oneway_flag);
-#endif
 #ifdef CONFIG_HW_BINDER_FG_REQ_FIRST
 #ifdef CONFIG_HW_VIP_THREAD
 		binder_thread_check_and_remove_dynamic_vip(thread);
@@ -4676,10 +4639,6 @@ retry:
 			trd->sender_pid =
 				task_tgid_nr_ns(sender,
 						task_active_pid_ns(current));
-#ifdef CONFIG_HW_QOS_THREAD
-			binder_thread_check_and_set_dynamic_qos(thread,
-				t_from, (t->flags & TF_ONE_WAY));
-#endif
 #ifdef CONFIG_HW_BINDER_FG_REQ_FIRST
 #ifdef CONFIG_HW_VIP_THREAD
 			binder_thread_check_and_set_dynamic_vip(thread, t_from);

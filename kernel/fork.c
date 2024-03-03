@@ -93,16 +93,13 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/task.h>
 
-#if ((defined(CONFIG_HW_VIP_THREAD)) || (defined(CONFIG_HW_QOS_THREAD)))
+#ifdef CONFIG_HW_VIP_THREAD
 #include <cpu_netlink/cpu_netlink.h>
 #endif
 #ifdef CONFIG_HW_CGROUP_PIDS
 #include <./cgroup_huawei/cgroup_pids.h>
 #endif
 #include <linux/cpufreq_times.h>
-#ifdef CONFIG_HW_QOS_THREAD
-#include <chipset_common/hwqos/hwqos_common.h>
-#endif
 #ifdef CONFIG_HW_RECLAIM_ACCT
 #include <chipset_common/reclaim_acct/reclaim_acct.h>
 #endif
@@ -1957,10 +1954,7 @@ static __latent_entropy struct task_struct *copy_process(
 	write_unlock_irq(&tasklist_lock);
 
 	proc_fork_connector(p);
-#ifdef CONFIG_HW_QOS_THREAD
-	iaware_proc_fork_inherit(p, current);
-#endif
-#if ((defined(CONFIG_HW_VIP_THREAD)) || (defined(CONFIG_HW_QOS_THREAD)))
+#ifdef CONFIG_HW_VIP_THREAD
 	iaware_proc_fork_connector(p);
 #endif
 	cgroup_post_fork(p);

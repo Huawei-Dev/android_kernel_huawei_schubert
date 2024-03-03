@@ -338,28 +338,7 @@ enum DYNAMIC_VIP_TYPE
 #define VIP_MSG_LEN 64
 #define VIP_DEPTH_MAX 2
 #endif
-#ifdef CONFIG_HW_QOS_THREAD
-enum DYNAMIC_QOS_TYPE {
-	DYNAMIC_QOS_BINDER = 0,
-	DYNAMIC_QOS_RWSEM,
-	DYNAMIC_QOS_MUTEX,
-	DYNAMIC_QOS_FUTEX,
-	DYNAMIC_QOS_TYPE_MAX,
-};
-enum DYNAMIC_QOS_VALUE {
-	VALUE_QOS_LOW = 0,
-	VALUE_QOS_NORMAL,
-	VALUE_QOS_HIGH,
-	VALUE_QOS_CRITICAL,
-	VALUE_QOS_MAX,
-};
-enum DYNAMIC_QOS_OPERATION {
-	OPERATION_QOS_SET = 0,
-	OPERATION_QOS_ENQUEUE,
-	OPERATION_QOS_DEQUEUE,
-	OPERATION_QOS_MAX,
-};
-#endif
+
 enum task_event {
 	PUT_PREV_TASK   = 0,
 	PICK_NEXT_TASK  = 1,
@@ -1876,7 +1855,7 @@ struct task_struct {
 	unsigned int flags;	/* per process flags, defined below */
 	unsigned int ptrace;
 
-#if ((defined(CONFIG_HW_VIP_THREAD)) || (defined(CONFIG_HW_QOS_THREAD)))
+#ifdef CONFIG_HW_VIP_THREAD
 	int static_vip;
 #endif
 #ifdef CONFIG_HW_VIP_THREAD
@@ -1886,11 +1865,7 @@ struct task_struct {
 	u64 enqueue_time;
 	u64 dynamic_vip_start;
 #endif
-#ifdef CONFIG_HW_QOS_THREAD
-	atomic_t dynamic_qos;
-	atomic_t trans_flags;
-	struct transact_qos trans_qos[DYNAMIC_QOS_TYPE_MAX];
-#endif
+
 #ifdef CONFIG_SMP
 	struct llist_node wake_entry;
 	int on_cpu;
