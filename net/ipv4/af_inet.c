@@ -143,9 +143,6 @@ static inline int current_has_network(void)
 #include <huawei_platform/net/qtaguid_pid/qtaguid_pid.h>
 #endif
 
-#ifdef CONFIG_HW_HIDATA_HIMOS
-#include <huawei_platform/net/himos/hw_himos_tcp_stats.h>
-#endif
 #ifdef CONFIG_HW_DPIMARK_MODULE
 #include <huawei_platform/net/hw_dpi_mark/dpi_hw_hook.h>
 #endif
@@ -840,10 +837,6 @@ int inet_sendmsg(struct socket *sock, struct msghdr *msg, size_t size)
 			return err;
 	}
 #endif
-#ifdef CONFIG_HW_HIDATA_HIMOS
-	if (sk->sk_protocol == IPPROTO_TCP)
-		himos_tcp_stats(sk, NULL, msg, 0, 1);
-#endif
 	return sk->sk_prot->sendmsg(sk, msg, size);
 }
 EXPORT_SYMBOL(inet_sendmsg);
@@ -875,13 +868,6 @@ int inet_recvmsg(struct socket *sock, struct msghdr *msg, size_t size,
 #ifdef CONFIG_HW_DPIMARK_MODULE
 	int ret;
 #endif
-#ifdef CONFIG_HW_HIDATA_HIMOS
-	struct msghdr msg_backup;
-
-	if (msg)
-		msg_backup = *msg;
-#endif
-
 	sock_rps_record_flow(sk);
 
 	err = sk->sk_prot->recvmsg(sk, msg, size, flags & MSG_DONTWAIT,
@@ -889,11 +875,6 @@ int inet_recvmsg(struct socket *sock, struct msghdr *msg, size_t size,
 	if (err >= 0)
 		msg->msg_namelen = addr_len;
 
-#ifdef CONFIG_HW_HIDATA_HIMOS
-	if (err > 0 && sk->sk_protocol == IPPROTO_TCP) {
-		himos_tcp_stats(sk, &msg_backup, msg, err, 0);
-	}
-#endif
 #ifdef CONFIG_HW_DPIMARK_MODULE
 	if (sk->sk_protocol == IPPROTO_UDP || sk->sk_protocol == IPPROTO_UDPLITE) {
 		ret = mplk_recvmsg(sk);
