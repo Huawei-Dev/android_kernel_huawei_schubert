@@ -4960,7 +4960,6 @@ CONFIG_HISI_SECS_CTRL=y
 # Hisilicon Performace Control
 #
 CONFIG_HISI_DUMMY_KO=m
-# CONFIG_HISI_KERNEL_BL31_LOG is not set
 
 #
 # NPU Drivers

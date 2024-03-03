@@ -61,4 +61,3 @@ obj-$(CONFIG_HISI_DIEID) += dieid/
 endif
 obj-$(CONFIG_TLB_CONFLICT_WORKAROUND) += tlb_conflict/
 obj-$(CONFIG_HISI_DUMMY_KO) += hisi_dummy_ko/
-obj-$(CONFIG_HISI_KERNEL_BL31_LOG) += bl31_log/
