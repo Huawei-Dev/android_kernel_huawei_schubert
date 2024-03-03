@@ -52,19 +52,6 @@ early_param("reboot_reason", wp_reboot_reason_cmdline);
 
 void zrhung_report_endrecovery(void)
 {
-#ifdef CONFIG_HW_ERECOVERY
-	if (is_coldboot) {
-		erecovery_eventobj rp;
-		long ret = 0;
-		memset(&rp, 0, sizeof(erecovery_eventobj));
-		rp.erecovery_id = ZRHUNG_VMWTG_ERECOVERYID;
-		rp.fault_id = ZRHUNG_VMWTG_FAULTID;
-		rp.state = EVENT_END;
-		ret = erecovery_report(&rp);
-		if (!ret)
-			printk(KERN_ERR "%s %d: VMWTG-surfaceflinger recovery end report failed. \n", __FUNCTION__, __LINE__);
-	}
-#endif
 }
 
 void zrhung_get_longpress_event(void)
