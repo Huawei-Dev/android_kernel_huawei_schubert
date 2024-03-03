@@ -44,12 +44,5 @@ config HUAWEI_HIDESYMS
 	default n
 	help
 	Hide some sensitive kernel symbols
-
-config HUAWEI_HIDESYMS_DEBUGFS
-	bool "hide symbols debugfs interface"
-	depends on HUAWEI_HIDESYMS && DEBUG_FS
-	default n
-	help
-	Turn on the debugfs interface for hide symbols
 endmenu
 #a blank line must be existed
