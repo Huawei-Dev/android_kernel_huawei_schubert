@@ -72,10 +72,6 @@
 #include <huawei_platform/power/huawei_battery_temp.h>
 #include <huawei_platform/power/series_batt_charger.h>
 
-#ifdef CONFIG_HUAWEI_YCABLE
-#include <huawei_platform/usb/hw_ycable.h>
-#endif
-
 /* battery safety notifier head */
 BLOCKING_NOTIFIER_HEAD(charger_event_notify_head);
 /*adaptor test result*/
@@ -2364,14 +2360,6 @@ static void charge_select_charging_current(struct charge_device_info *di)
 		break;
 	}
 
-#ifdef CONFIG_HUAWEI_YCABLE
-	if (ycable_is_support() && (ycable_get_status() == YCABLE_CHARGER)) {
-		di->input_current = ycable_get_input_current();
-		di->charge_current = ycable_get_charge_current();
-		hwlog_info("ycable input curr = %d, ichg curr = %d\n",
-			di->input_current, di->charge_current);
-	}
-#endif
 	/*only the typec is supported ,we need read typec result and
 	when adapter is fcp adapter ,we set current by fcp adapter rule */
 	if (di->core_data->typec_support && (FCP_STAGE_SUCESS != fcp_get_stage_status())) {
@@ -4083,13 +4071,6 @@ static int charge_usb_notifier_call(struct notifier_block *usb_nb,
 	charger_type_ever_notify = true;
 	charge_wake_lock();
 
-#ifdef CONFIG_HUAWEI_YCABLE
-	if (ycable_is_support() && ycable_is_with_charger() && (event == PLEASE_PROVIDE_POWER)) {
-		hwlog_info("ycable mode with charger,should not start otg\n");
-		return NOTIFY_OK;
-	}
-#endif
-
 	filter_flag = charge_rename_charger_type(event, di, FALSE);
 	if(filter_flag)
 	{
@@ -4116,47 +4097,6 @@ static enum huawei_usb_charger_type huawei_get_charger_type(void)
 	}
 	return di->charger_type;
 }
-
-#ifdef CONFIG_HUAWEI_YCABLE
-static int charge_ycable_notifier_call(struct notifier_block *ycable_nb,
-	unsigned long event, void *data)
-{
-	struct charge_device_info *di = NULL;
-	int filter_flag = TRUE;
-	int ret = 0;
-
-	if (ycable_nb == NULL) {
-		hwlog_err("error:ycable_nb is null\n");
-		return NOTIFY_OK;
-	}
-
-	di = container_of(ycable_nb, struct charge_device_info, ycable_nb);
-	if (di == NULL) {
-		hwlog_err("error:ycable charger info is null\n");
-		return NOTIFY_OK;
-	}
-
-	charger_type_ever_notify = true;
-	charge_wake_lock();
-
-	hwlog_info("charge_ycable_notifier_call event = %ld\n", event);
-
-	filter_flag = charge_rename_charger_type(event, di, FALSE);
-	if (filter_flag) {
-		hwlog_info("not use work,filter_flag=%d\n", filter_flag);
-		return NOTIFY_OK;
-	}
-
-	charge_uevent_process(di, event);
-
-	ret = schedule_work(&di->usb_work);
-	if (!ret) {
-		hwlog_err("error:usb work state ret = %d\n", ret);
-	}
-
-	return NOTIFY_OK;
-}
-#endif
 
 #ifdef CONFIG_WIRELESS_CHARGER
 void wireless_charge_connect_send_uevent(void)
@@ -5838,14 +5778,6 @@ static int charge_probe(struct platform_device *pdev)
 	ret = register_wireless_charger_vbus_notifier(&di->wireless_nb);
 	if (ret < 0) {
 		hwlog_err("register_wireless_charger_notifier failed\n");
-	}
-#endif
-
-#ifdef CONFIG_HUAWEI_YCABLE
-	di->ycable_nb.notifier_call = charge_ycable_notifier_call;
-	ret = ycable_register_event_notifier(&di->ycable_nb);
-	if (ret < 0) {
-		hwlog_err("error:register_ycable_event_notifier failed\n");
 	}
 #endif
 

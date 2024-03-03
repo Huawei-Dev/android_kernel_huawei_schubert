@@ -66,9 +66,6 @@
 
 #include <linux/fb.h>
 #include <huawei_platform/usb/hw_usb.h>
-#ifdef CONFIG_HUAWEI_HISHOW
-#include <huawei_platform/usb/hw_hishow.h>
-#endif
 
 #include <linux/power/hisi/hisi_bci_battery.h>
 

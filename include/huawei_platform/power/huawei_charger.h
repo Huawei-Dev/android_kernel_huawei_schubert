@@ -599,9 +599,6 @@ struct charge_device_info {
 	int avg_iin_ma;
 	int max_iin_ma;
 	int current_full_status;
-#ifdef CONFIG_HUAWEI_YCABLE
-	struct notifier_block ycable_nb;
-#endif
 	int iin_regulation_enabled;
 	int iin_regl_interval;
 	int iin_now;
