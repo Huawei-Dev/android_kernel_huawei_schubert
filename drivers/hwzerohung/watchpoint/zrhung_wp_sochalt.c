@@ -11,7 +11,6 @@
 #include <linux/syscalls.h>
 #include <chipset_common/hwzrhung/zrhung.h>
 #include "../zrhung_common.h"
-#include <chipset_common/hwerecovery/erecovery.h>
 #include "zrhung_wp_sochalt.h"
 
 static int is_soc_halt;
