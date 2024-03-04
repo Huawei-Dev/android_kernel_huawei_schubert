@@ -161,13 +161,6 @@ static int patch_insn_setup(struct oases_patch_entry *patch,
 	if (insn->trampoline) {
 		oases_set_vmarea_ro((unsigned long) insn->trampoline,
 			PAGE_ALIGN(TRAMPOLINE_BUF_SIZE) >> PAGE_SHIFT);
-#ifdef CONFIG_HISI_HHEE
-		if (is_hkip_enabled()) {
-			oases_debug("disable pxn for trampoline, trampoline=%pK, size=%d, aligned size=%d\n",
-				insn->trampoline, TRAMPOLINE_BUF_SIZE, PAGE_ALIGN(TRAMPOLINE_BUF_SIZE));
-			aarch64_insn_disable_pxn_hkip(insn->trampoline, PAGE_ALIGN(TRAMPOLINE_BUF_SIZE));
-	    }
-#endif
 		flush_icache_range((unsigned long) insn->trampoline,
 			(unsigned long) insn->trampoline + TRAMPOLINE_BUF_SIZE);
 	}

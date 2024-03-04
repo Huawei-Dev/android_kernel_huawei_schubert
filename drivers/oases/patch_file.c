@@ -545,13 +545,6 @@ int oases_build_code(struct oases_patch_info *info, struct oases_patch_file *pfi
 			/* kill W for RX */
 			ret = oases_set_vmarea_ro((unsigned long)tmp, sections[i].page);
 			oases_debug("setting rx, ret=%d\n", ret);
-#ifdef CONFIG_HISI_HHEE
-			if (is_hkip_enabled()) {
-				oases_debug("hkip_enabled:tmp=%pK, sections[%d].page=%u\n",
-					tmp, i, sections[i].page);
-				aarch64_insn_disable_pxn_hkip(tmp, sections[i].page * PAGE_SIZE);
-			}
-#endif
 		} else if (sections[i].type == SECTION_RW) {
 			/* kill X for RW */
 			oases_set_vmarea_nx((unsigned long)tmp, sections[i].page);

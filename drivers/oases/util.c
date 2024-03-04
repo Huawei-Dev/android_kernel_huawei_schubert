@@ -275,21 +275,10 @@ int oases_remove_patch(struct oases_patch_info *info)
 /*
  * bypass kernel memory write protection in this function.
  */
-#ifdef CONFIG_HISI_HHEE
-static inline int oases_insn_patch_nosync(void* addr, u32 insn)
-#else
 static int oases_insn_patch_nosync(void* addr, u32 insn)
-#endif
 {
 #if defined(__aarch64__)
 	oases_debug("addr:0x%pK, insn:%x\n", addr, insn);
-#ifdef CONFIG_HISI_HHEE
-	if (is_hkip_enabled()) {
-		oases_debug("calling hkip patch text\n");
-		aarch64_insn_patch_text_hkip(addr, insn);
-		return 0;
-	}
-#endif
 	return aarch64_insn_patch_text_nosync(addr, insn);
 #else
 	int err;

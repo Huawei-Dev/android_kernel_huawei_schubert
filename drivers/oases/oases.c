@@ -33,10 +33,6 @@
 #define	OASES_IOCTL_BASE 0xBB
 #define OASES_IOCTL_REMOVE_PATCH _IOW(OASES_IOCTL_BASE, 1, struct oases_unpatch)
 
-#ifdef CONFIG_HISI_HHEE
-unsigned long oases_hkip_token;
-#endif
-
 struct oases_dev
 {
 	struct cdev cdev;
@@ -341,15 +337,6 @@ static int __init oases_init(void)
 		oases_error("oases_init_signing_keys failed\n");
 		goto init_keys_fail;
 	}
-
-#ifdef CONFIG_HISI_HHEE
-	if (is_hkip_enabled()) {
-		ret = get_oases_hkip_token(&oases_hkip_token);
-		if (ret < 0) {
-			oases_error("oases_get_hkip_token failed\n");
-		}
-	}
-#endif
 
 	oases_info("oases_init success\n");
 	return 0;
