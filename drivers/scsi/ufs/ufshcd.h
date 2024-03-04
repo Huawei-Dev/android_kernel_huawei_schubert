@@ -536,11 +536,6 @@ struct ufs_hba_variant_ops {
 		 UFSHCD_DBG_PRINT_TMRS_EN | UFSHCD_DBG_PRINT_PWR_EN |	   \
 		 UFSHCD_DBG_PRINT_HOST_STATE_EN)
 
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-struct ufs_hi1861_fsr {
-	struct device_attribute fsr_attr;
-};
-#endif
 struct ufs_temp {
 	struct device_attribute temp_attr;
 	int temp;
@@ -771,9 +766,6 @@ struct ufs_hba {
 	struct work_struct eeh_work;
 	struct work_struct dsm_work;
 	struct work_struct rpmb_pm_work;
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-	struct work_struct fsr_work;
-#endif
 #ifdef CONFIG_SCSI_UFS_HS_ERROR_RECOVER
 	struct work_struct recover_hs_work;
 #endif
@@ -804,9 +796,6 @@ struct ufs_hba {
 	struct ufs_pa_layer_attr pwr_info;
 	struct ufs_pwr_mode_info max_pwr_info;
 
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-	struct ufs_hi1861_fsr ufs_fsr;
-#endif
 	struct ufs_temp ufs_temp;
 	struct ufs_inline_state inline_state;
 

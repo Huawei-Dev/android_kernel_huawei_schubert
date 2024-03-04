@@ -301,19 +301,6 @@ static struct ufs_hba *fsr_hba = NULL;
 static unsigned int ufs_manufacture = 0;
 static unsigned int dm_ufs_manfid = 0;
 
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-static int iotrace_ufs_fsr_get(void);
-static int io_fsr_log_get(struct file *filp);
-
-static struct task_struct *apr_work_thread = NULL;
-static int apr_work_thread_fn(void *data);
-
-#define UFS_HI1861_FSR_DMD_CODE  938008000
-#define UFS_HI1861_FSR_UPLOAD_INTER  (1 * 12 * 3600)//24 hours
-//#define UFS_HI1861_FSR_UPLOAD_INTER  (60)
-#define UFS_HI1861_FSR_UPLOAD_FIRST_INTER (5 * 60)//5 minus
-#endif
-
 struct io_trace_pid
 {
     pid_t pid;
@@ -380,9 +367,6 @@ static int write_head_kernel(struct file *filp);
 
 static IO_TRACE_DEVICE_ATTR(enable);
 static IO_TRACE_DEVICE_ATTR(pid);
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-static IO_TRACE_DEVICE_ATTR(fsr);
-#endif
 static struct kobj_attribute io_log_data_attr = {
     .attr = {.name = "io_data", .mode= 0660},
     .show = io_log_data_show,
@@ -392,9 +376,6 @@ static struct kobj_attribute io_log_data_attr = {
 static struct attribute *io_trace_attrs[] = {
     &dev_attr_enable.attr,
     //&dev_attr_pid.attr,
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-    &dev_attr_fsr.attr,
-#endif
     &io_log_data_attr.attr,
     NULL,
 };
@@ -624,26 +605,6 @@ static int io_trace_count_upload(void)
 
     return 0;
 }
-
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-static int io_trace_fsr_upload(void)
-{
-    struct imonitor_eventobj *obj = imonitor_create_eventobj(UFS_HI1861_FSR_DMD_CODE);
-
-    if (!obj) {
-        io_trace_print("obj_fsr create failed!\n");
-        return -1;
-    }
-
-    io_trace_print("obj_fsr upload ing \n");
-
-    imonitor_send_event(obj);
-
-    imonitor_destroy_eventobj(obj);
-
-    return 0;
-}
-#endif
 
 static struct io_trace_interface *my_itface;
 //static struct io_trace_interface *all_itface[SYS_IO_NUM] = {NULL, NULL};
@@ -928,16 +889,6 @@ log_end:
     {
 
 /* get hi1861 fsr log when blocked */
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-        if (ufs_manufacture == UFS_VENDOR_HI1861) {
-            ret_e = io_fsr_log_get(io_trace_this->filp);
-
-            if (ret_e < 0){
-                io_trace_print("fsr write log kernel failed:[%d]\n", ret_e);
-            }
-        }
-#endif
-
         count = io_trace_this->all_log_count;
 
         for(i = io_trace_this->all_log_index, j = 0; j < count; j++)
@@ -1078,15 +1029,6 @@ static ssize_t sysfs_io_trace_attr_show(struct device *dev,
             io_trace_this->enable = 1;
             return ret;
         }
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-        if (ufs_manufacture == UFS_VENDOR_HI1861) {
-            ret_e = io_fsr_log_get(io_trace_this->filp);
-
-            if (ret_e < 0){
-                io_trace_print("fsr write log kernel failed:[%d]\n", ret_e);
-            }
-        }
-#endif
         write_head_kernel(io_trace_this->filp);
         if(io_trace_this->all_log_count > 0)
         {
@@ -1111,25 +1053,6 @@ static ssize_t sysfs_io_trace_attr_show(struct device *dev,
 
         io_trace_this->enable = 1;
     }
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-    if(attr == &dev_attr_fsr)
-    {
-
-        io_trace_this->enable = 0;
-
-        ret = iotrace_ufs_fsr_get();
-
-        if(ret >= 0)
-            ret = sprintf(buf, "Succeed\n");
-        else{
-            ret = sprintf(buf, "Failed\n");
-            return -1;
-        }
-        io_trace_this->enable = 1;
-
-    }
-
-#endif
     return ret;
 }
 
@@ -1190,125 +1113,8 @@ static ssize_t sysfs_io_trace_attr_store(struct device *dev,
         io_trace_this->out_valid = 1;
         io_trace_this->out_test = value;
     }
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-    if(attr == &dev_attr_fsr){
-        io_trace_print("load hi1861 Fsr log\n");
-    }
-#endif
     return count;
 }
-
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-extern int ufshcd_get_fsr_command(struct ufs_hba *hba, unsigned char *buf, unsigned int size);
-static int iotrace_ufs_fsr_get(void)
-{
-	struct ufs_kirin_host *host_kirin = NULL;
-    static struct file *fsr_filp = NULL;
-	int ret = 0;
-    char file_name[128];
-
-    if(!fsr_hba)
-    {
-        io_trace_print("%s shost_priv host failed\n", __func__);
-        return -1;
-    }
-
-    if ( (fsr_hba->manufacturer_id == 0) || (UFS_VENDOR_HI1861 != fsr_hba->manufacturer_id) )
-    {
-        io_trace_print("fsr is only for hi1861!\n");
-        return -1;
-    }
-
-    host_kirin = fsr_hba->priv;
-
-    if ( host_kirin -> in_suspend ){
-        io_trace_print("hiVV device is in suspend!\n");
-        return -1;
-    }
-
-    sprintf(file_name, "/sdcard/log_%s", "fsr");
-    fsr_filp = open_log_file(file_name);
-
-    if(fsr_filp == NULL)
-    {
-        io_trace_print("io_trace open file %s failed!\n", file_name);
-        return 0;
-    }
-
-	ret = io_fsr_log_get(fsr_filp);
-
-    if(ret < 0){
-        io_trace_print("store fsr log kernel failed !\n");
-    }
-
-    if(fsr_filp){
-        filp_close(fsr_filp, NULL);
-    }
-
-    return ret;
-}
-
-static int io_fsr_log_get(struct file *filp)
-{
-	struct ufs_kirin_host *host_kirin = NULL;
-	unsigned char *mem = NULL;
-	int ret = 0;
-
-    if(!fsr_hba)
-    {
-        io_trace_print("%s shost_priv host failed\n", __func__);
-        return -1;
-    }
-
-    if ( (fsr_hba->manufacturer_id == 0) || (UFS_VENDOR_HI1861 != fsr_hba->manufacturer_id) )
-    {
-        io_trace_print("fsr is only for hi1861!\n");
-        return -1;
-    }
-
-    host_kirin = fsr_hba->priv;
-
-    if ( host_kirin -> in_suspend ) {
-        io_trace_print("hiVV is in suspend!\n");
-        return -1;
-    }
-
-    mem = io_mem_mngt_alloc(io_trace_this->mem_mngt);
-
-    if(filp == NULL)
-    {
-		io_trace_print("io_trace open file failed!\n");
-        ret = -1;
-        goto end;
-    }
-
-    if(mem == NULL){
-        io_trace_print("fsr mem alloc failed !\n");
-        ret = -1;
-        goto end;
-    }
-
-    ret = ufshcd_get_fsr_command(fsr_hba, mem, IO_MAX_BUF_ENTRY);
-
-    if(ret < 0){
-        io_trace_print("get fsr log kernel failed !\n");
-        goto end;
-    }
-
-    ret = write_io_monlog_kernel(filp, (unsigned char *)mem, IO_MAX_BUF_ENTRY);
-    if(ret < 0){
-        io_trace_print("write fsr log kernel failed:[%d]\n", ret);
-        goto end;
-    }
-
-end:
-    if(mem){
-        io_mem_mngt_free(io_trace_this->mem_mngt, (unsigned char *)mem);
-        mem = NULL;
-    }
-    return ret;
-}
-#endif
 
 static int write_head_kernel(struct file *filp)
 {
@@ -3082,73 +2888,6 @@ static int io_count_thread_fn(void *data)
     return 0;
 }
 
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-static int apr_work_thread_fn(void *data)
-{
-    int ret;
-    //struct timespec curr_time;
-    char file_name[128];
-    static struct file *fsr_filp = NULL;
-    int first_time = 1;
-
-    while (1) {
-        set_current_state(TASK_UNINTERRUPTIBLE);
-        if (kthread_should_stop()) {
-            break;
-        }
-
-        if (first_time) {
-            schedule_timeout(UFS_HI1861_FSR_UPLOAD_FIRST_INTER * HZ);
-            //io_trace_print("get fsr after reboot!\n");
-            first_time = 0;
-        } else {
-            schedule_timeout(UFS_HI1861_FSR_UPLOAD_INTER * HZ);
-        }
-
-        if((ufs_manufacture != UFS_VENDOR_HI1861) && apr_work_thread)
-        {
-            //io_trace_print("add by Somic,fsr thread kill\n");
-            apr_work_thread = NULL;
-            break;
-        }
-
-        __set_current_state(TASK_RUNNING);
-        if ((!io_trace_this->enable) || (fsr_hba == NULL))
-        {
-            continue;
-        }
-
-        io_trace_this->enable = 0;
-
-        sprintf(file_name, "/data/log/jank/iotrace/log_%s", "hi1861_fsr");
-		fsr_filp = open_log_file(file_name);
-
-        ret = io_fsr_log_get(fsr_filp);
-
-        if (ret < 0) {
-            io_trace_print("apr get fsr failed!\n");
-        }
-
-		if(fsr_filp){
-			filp_close(fsr_filp, NULL);
-		}
-
-        ret = io_trace_fsr_upload();
-
-        if (ret < 0)
-        {
-            io_trace_print("apr fsr upload failed\n");
-        }
-
-        io_trace_this->enable = 1;
-
-        //curr_time = current_kernel_time();
-        //io_trace_print("add by Somic,time : %lld\n", curr_time.tv_sec);
-    }
-    return 0;
-}
-#endif
-
 static void ufs_manfid( unsigned int ufs_manufid) {
 	switch (ufs_manufid) {
 		case 0x0003:
@@ -3237,25 +2976,6 @@ static int __init io_trace_init(void)
 	ufs_manfid(ufs_manufacture);
 	io_trace_print("manfid : 0x%x\n", dm_ufs_manfid);
 
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-    //start fsr get thead
-    if((ufs_manufacture == UFS_VENDOR_HI1861) && (apr_work_thread == NULL)){
-        apr_work_thread = kthread_create(apr_work_thread_fn, NULL, "hi1861-fsr");
-
-        if(IS_ERR(apr_work_thread))
-        {
-            io_trace_print("Unable to start hi1861 FSR get thread!\n");
-            err = PTR_ERR(apr_work_thread);
-            apr_work_thread = NULL;
-        }
-
-        if(!err)
-        {
-            io_trace_print("Hi1861 FSR get start succeed\n");
-            wake_up_process(apr_work_thread);
-        }
-    }
-#endif
     io_trace_this->pdev = platform_device_register_simple("io_trace", -1, NULL, 0);
     if(!io_trace_this->pdev)
     {

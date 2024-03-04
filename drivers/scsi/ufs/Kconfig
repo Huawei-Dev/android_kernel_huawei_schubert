@@ -263,13 +263,6 @@ config HUAWEI_UFS_DSM
        bool "Listen UFS Kernel Error"
        depends on SCSI_UFSHCD
 
-config SCSI_UFS_HI1861_VCMD
-	bool "UFS Hi1861 Device Vendor Command"
-	depends on SCSI_UFSHCD
-	---help---
-	This adds UFS Hisilicon Device defined vendor command.
-	contained that query fsr and so on.
-
 config HISI_UFS_MANUAL_BKOPS
        bool "hisi manual BKOPS support for UFS"
        depends on HISI_BK_OPS && SCSI_UFSHCD

@@ -360,11 +360,7 @@ struct ufshcd_sg_entry {
 #define UFS_SG_MAX_COUNT        256
 #endif
 
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-#define MAX_DATA_USED_SPACE (124 + 1) /* 1861 REMAP 62K*/
-#else
 #define MAX_DATA_USED_SPACE (8 + 1) /* 1861 FSR 4K*/
-#endif
 
 /**
  * struct utp_transfer_cmd_desc - UFS Command Descriptor structure
@@ -374,11 +370,7 @@ struct ufshcd_sg_entry {
  */
 struct utp_transfer_cmd_desc {
 	u8 command_upiu[ALIGNED_UPIU_SIZE];
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-	u8 response_upiu[ALIGNED_UPIU_SIZE * MAX_DATA_USED_SPACE];
-#else
 	u8 response_upiu[ALIGNED_UPIU_SIZE];
-#endif
 #ifdef CONFIG_SCSI_UFS_CUST_MAX_SECTORS
 	struct ufshcd_sg_entry    prd_table[UFS_SG_MAX_COUNT];
 #else

@@ -271,13 +271,6 @@ static inline bool ufshcd_valid_tag(struct ufs_hba *hba, int tag)
 {
 	return tag >= 0 && tag < hba->nutrs;
 }
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-struct remap_mapping{
-	unsigned int size;
-	unsigned int old_addr;
-	unsigned int new_addr;
-};
-#endif
 
 static void ufshcd_print_uic_err_hist(struct ufs_hba *hba,
 		struct ufs_uic_err_reg_hist *err_hist, char *err_name)
@@ -1754,48 +1747,6 @@ reinit:
 }
 #endif
 
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-void ufshcd_fsr_dump_handler(struct work_struct *work)
-{
-	struct ufs_hba *hba;
-	u8 *fbuf;
-	int i = 0;
-	int ret = 0;
-
-	hba = container_of(work, struct ufs_hba, fsr_work);
-
-	if (UFS_VENDOR_HI1861 != hba->manufacturer_id)
-		return;
-	/* allocate memory to hold full descriptor */
-	fbuf = kmalloc(HI1861_FSR_INFO_SIZE, GFP_KERNEL);
-	if (!fbuf) {
-		return;
-
-	}
-	memset(fbuf, 0, HI1861_FSR_INFO_SIZE);
-
-	ret = ufshcd_read_fsr(hba, fbuf, HI1861_FSR_INFO_SIZE);
-	if (ret) {
-		kfree(fbuf);
-		dev_err(hba->dev, "[%s]READ FSR FAILED\n", __func__);
-		return;
-	}
-#ifdef CONFIG_HISI_DEBUG_FS
-	dev_err(hba->dev, "===============UFS HI1861 FSR INFO===============\n");
-#endif
-	/*lint -save -e661 -e662*/
-	for (i = 0 ; i < HI1861_FSR_INFO_SIZE; i = i + 16) {
-		dev_err(hba->dev, "0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n",
-		*(fbuf + i + 0), *(fbuf + i + 1), *(fbuf + i + 2), *(fbuf + i + 3),
-		*(fbuf + i + 4), *(fbuf + i + 5), *(fbuf + i + 6), *(fbuf + i + 7),
-		*(fbuf + i + 8), *(fbuf + i + 9), *(fbuf + i + 10), *(fbuf + i + 11),
-		*(fbuf + i + 12), *(fbuf + i + 13), *(fbuf + i + 14), *(fbuf + i + 15));
-	}
-	/*lint -restore*/
-	kfree(fbuf);
-}
-#endif
-
 /*lint -restore*/
 /**
  * ufs_ffu_pm_runtime_delay_enable - when ffu_pm_work in workqueue is scheduled, after 30 allow pm_runtime
@@ -2616,212 +2567,6 @@ int ufshcd_query_descriptor_retry(struct ufs_hba *hba,
 	return err;
 }
 EXPORT_SYMBOL(ufshcd_query_descriptor_retry);
-
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-static int __ufshcd_query_fsr(struct ufs_hba *hba,
-			enum query_opcode opcode, enum desc_idn idn, u8 index,
-			u8 selector, u8 *desc_buf, int *buf_len)
-{
-	struct ufs_query_req *request = NULL;
-	struct ufs_query_res *response = NULL;
-	int err;
-
-	BUG_ON(!hba);
-
-	if (!desc_buf) {
-		dev_err(hba->dev, "%s: desc fsr buffer required for opcode 0x%x\n",
-				__func__, opcode);
-		err = -EINVAL;
-		goto out;
-	}
-	if (*buf_len > HI1861_FSR_INFO_SIZE) {
-		dev_err(hba->dev, "%s: desc fsr buffer size (%d) is out of range\n",
-				__func__, *buf_len);
-		err = -EINVAL;
-		goto out;
-	}
-	mutex_lock(&hba->dev_cmd.lock);
-	ufshcd_init_query(hba, &request, &response, opcode, idn, index,
-			selector);
-	hba->dev_cmd.query.descriptor = desc_buf;
-	request->upiu_req.length = cpu_to_be16(*buf_len);
-
-	switch (opcode) {
-	case UPIU_QUERY_OPCODE_READ_HI1861_FSR:
-		request->query_func = UPIU_QUERY_FUNC_STANDARD_READ_REQUEST;
-		break;
-	default:
-		dev_err(hba->dev,
-				"%s: Expected query fsr desc opcode but got = 0x%.2x\n",
-				__func__, opcode);
-		err = -EINVAL;
-		goto out_unlock;
-	}
-	err = ufshcd_exec_dev_cmd(hba, DEV_CMD_TYPE_QUERY, QUERY_REQ_TIMEOUT);
-
-	if (err) {
-		dev_err(hba->dev, "%s: opcode 0x%.2x for idn %d failed, err = %d\n",
-				__func__, opcode, idn, err);
-		goto out_unlock;
-	}
-
-	hba->dev_cmd.query.descriptor = NULL;
-	*buf_len = be16_to_cpu(response->upiu_res.length);
-
-out_unlock:
-	mutex_unlock(&hba->dev_cmd.lock);
-out:
-
-	return err;
-}
-
-/**
-* ufshcd_query_fsr_retry -query devvice desc for fsr info
-* @hba: Pointer to adapter instance
-* @opcode: the query opcode to fsr info
-* @idn:the address setting to device desc fsr
-* @index:the address setting to device desc fsr
-* @selector:the address setting to device desc fsr
-* @desc_buf:the buf for get fsr
-* @buf_len:the buf size, just like 4k byte
-*/
-int ufshcd_query_fsr_retry(struct ufs_hba *hba,
-			enum query_opcode opcode, enum desc_idn idn, u8 index,
-			u8 selector, u8 *desc_buf, int *buf_len)
-{
-	int err = 0;
-	int retries;
-
-	for (retries = QUERY_REQ_RETRIES; retries > 0; retries--) {
-		err = __ufshcd_query_fsr(hba, opcode, idn, index,
-						selector, desc_buf, buf_len);
-		if (!err || err == -EINVAL) {
-			break;
-		}
-	}
-
-	return err;
-}
-EXPORT_SYMBOL(ufshcd_query_fsr_retry);
-
-static int ufshcd_read_fsr_info(struct ufs_hba *hba,
-				enum desc_idn desc_id,
-				int desc_index,
-				u8 *param_read_buf,
-				u32 param_size)
-{
-	int ret;
-	u8 *desc_buf;
-	int buff_len;
-
-	if (UFS_VENDOR_HI1861 != hba->manufacturer_id)
-		return -EINVAL;
-	/* safety checks */
-	if (desc_id >= QUERY_DESC_IDN_MAX)
-		return -EINVAL;
-	if (!param_read_buf)
-		return -ENOMEM;
-	if (!param_size)
-		return -EINVAL;
-	else
-		buff_len = param_size;
-	/* allocate memory to hold full descriptor */
-	desc_buf = kmalloc(buff_len, GFP_KERNEL);
-	if (!desc_buf)
-		return -ENOMEM;
-	memset(desc_buf, 0, buff_len);
-
-	ret = ufshcd_query_fsr_retry(hba, UPIU_QUERY_OPCODE_READ_HI1861_FSR,
-					desc_id, desc_index, 0, desc_buf,
-					&buff_len);
-	if (ret) {
-		dev_err(hba->dev, "%s: Failed reading FSR. desc_id %d "
-				  "buff_len %d ret %d",
-			__func__, desc_id, buff_len, ret);
-
-		goto out;
-	}
-	memcpy(param_read_buf, desc_buf, buff_len);
-out:
-	kfree(desc_buf);
-
-	return ret;
-}
-
-int ufshcd_read_fsr(struct ufs_hba *hba, u8 *buf, u32 size)
-{
-	return ufshcd_read_fsr_info(hba, 0, 0, buf, size);
-}
-/**
-* ufshcd_get_fsr_command -scsi layer get fsr func
-* @hba: Pointer to adapter instance
-* @buf: the buf pointer to fsr info
-* @size:the buf size, just like 4k byte
-*/
-int ufshcd_get_fsr_command(struct ufs_hba *hba, u8 *buf,
-				u32 size)
-{
-	if (!hba) {
-		pr_err( "%s shost_priv host failed\n", __func__);
-		return -1;
-	}
-	return ufshcd_read_fsr_info(hba, (enum desc_idn)0, 0, buf, size);
-}
-EXPORT_SYMBOL(ufshcd_get_fsr_command);
-
-static ssize_t ufshcd_fsr_info_show(struct device *dev,
-				struct device_attribute *attr, char *buf)
-{
-	struct ufs_hba *hba = dev_get_drvdata(dev);
-	/* allocate memory to hold full descriptor */
-	u8 *fbuf = NULL;
-	int len = 0;
-	int i = 0;
-	int ret = 0;
-
-	if (UFS_VENDOR_HI1861 != hba->manufacturer_id)
-		return 0;
-	fbuf = kmalloc(HI1861_FSR_INFO_SIZE, GFP_KERNEL);
-	if (!fbuf) {
-		return -ENOMEM;
-	}
-	memset(fbuf, 0, HI1861_FSR_INFO_SIZE);
-	ret = ufshcd_read_fsr(hba, fbuf, HI1861_FSR_INFO_SIZE);
-	if (ret) {
-		kfree(fbuf);
-		dev_err(hba->dev, "[%s]READ FSR FAILED\n", __func__);
-		return ret;
-	}
-	/*lint -save -e661 -e662*/
-	for (i = 0; i < HI1861_FSR_INFO_SIZE; i = i + 16) {
-		len += snprintf(buf + len, PAGE_SIZE - len ,
-	"0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n",
-		*(fbuf + i + 0), *(fbuf + i + 1), *(fbuf + i + 2), *(fbuf + i + 3),
-		*(fbuf + i + 4), *(fbuf + i + 5), *(fbuf + i + 6), *(fbuf + i + 7),
-		*(fbuf + i + 8), *(fbuf + i + 9), *(fbuf + i + 10), *(fbuf + i + 11),
-		*(fbuf + i + 12), *(fbuf + i + 13), *(fbuf + i + 14), *(fbuf + i + 15));
-	}
-	/*lint -restore*/
-	kfree(fbuf);
-
-	return len;
-}
-
-/**
-* ufshcd_init_fsr_sys -init fsr attr node
-* @hba: Pointer to adapter instance
-* the node only to be read
-*/
-static void ufshcd_init_fsr_sys(struct ufs_hba *hba)
-{
-	hba->ufs_fsr.fsr_attr.show = ufshcd_fsr_info_show;
-	sysfs_attr_init(&hba->ufs_fsr.fsr_attr.attr);
-	hba->ufs_fsr.fsr_attr.attr.name = "ufs_fsr";
-	hba->ufs_fsr.fsr_attr.attr.mode = S_IRUSR | S_IRGRP;
-	if (device_create_file(hba->dev, &hba->ufs_fsr.fsr_attr))
-		dev_err(hba->dev, "Failed to create sysfs for ufs fsrs\n");
-}
-#endif
 
 static ssize_t ufshcd_ufs_temp_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
@@ -4699,23 +4444,6 @@ uhshcd_rsp_sense_data(struct ufs_hba *hba, struct ufshcd_lrb *lrbp, int scsi_sta
 		dsm_ufs_update_scsi_info(lrbp, scsi_status, DSM_UFS_DEV_INTERNEL_ERR);
 		schedule_ufs_dsm_work(hba);
 	}
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-	if (UFS_VENDOR_HI1861 == hba->manufacturer_id) {
-		if ((lrbp->ucd_rsp_ptr->sr.sense_data[2] & 0xf) == MEDIUM_ERROR &&
-			(lrbp->ucd_rsp_ptr->sr.sense_data[12] & 0xff) == 0x03 &&
-			(lrbp->ucd_rsp_ptr->sr.sense_data[13] & 0xff) == 0) {
-			dev_err(hba->dev,"1861 write fault\n");
-			BUG_ON(1);
-		}
-		if ((lrbp->ucd_rsp_ptr->sr.sense_data[2] & 0xf) == HI1861_INTERNEL &&
-			(lrbp->ucd_rsp_ptr->sr.sense_data[12] & 0xff) == 0x80 &&
-			(lrbp->ucd_rsp_ptr->sr.sense_data[13] & 0xff) == 0) {
-			dsm_ufs_update_scsi_info(lrbp, scsi_status, DSM_UFS_HI1861_INTERNEL_ERR);
-			schedule_ufs_dsm_work(hba);
-			schedule_work(&hba->fsr_work);
-		}
-	}
-#endif
 }
 
 /**
@@ -7356,10 +7084,6 @@ static int ufshcd_query_ioctl(struct ufs_hba *hba, u8 lun, void __user *buffer)
 	u8 *desc = NULL;
 	int desc_len = UFS_DESC_SIZE_MAX;
 	int buffer_size = desc_len;
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-	int fsr_len = HI1861_FSR_INFO_SIZE;
-	buffer_size = max(buffer_size, fsr_len);
-#endif
 
 	if (!buffer) {
 		dev_err(hba->dev, "%s: User buffer is NULL!\n", __func__);
@@ -7409,12 +7133,6 @@ static int ufshcd_query_ioctl(struct ufs_hba *hba, u8 lun, void __user *buffer)
 		err = ufshcd_query_descriptor_retry(hba, UPIU_QUERY_OPCODE_READ_DESC,
 					(enum desc_idn)(ioctl_data->idn), index, 0, desc, &desc_len);
 		break;
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-	case UPIU_QUERY_OPCODE_READ_HI1861_FSR:
-		err = ufshcd_query_fsr_retry(hba, UPIU_QUERY_OPCODE_READ_HI1861_FSR,
-					(enum desc_idn)0, 0, 0, desc, &fsr_len);
-		break;
-#endif
 	case UPIU_QUERY_OPCODE_READ_ATTR:
 		switch ((enum attr_idn)(ioctl_data->idn)) {
 		case QUERY_ATTR_IDN_PURGE_STATUS:
@@ -7475,13 +7193,6 @@ static int ufshcd_query_ioctl(struct ufs_hba *hba, u8 lun, void __user *buffer)
 				desc_len<(int)UFS_DESC_SIZE_MAX? desc_len : UFS_DESC_SIZE_MAX;
 		data_ptr = desc;
 		break;
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-	case UPIU_QUERY_OPCODE_READ_HI1861_FSR:
-		ioctl_data->buf_size =
-				fsr_len<(int)HI1861_FSR_INFO_SIZE? fsr_len : HI1861_FSR_INFO_SIZE;
-		data_ptr = desc;
-		break;
-#endif
 	case UPIU_QUERY_OPCODE_READ_ATTR:
 		ioctl_data->buf_size = sizeof(u32);
 		data_ptr = &att;
@@ -9159,9 +8870,6 @@ int ufshcd_init(struct ufs_hba *hba, void __iomem *mmio_base, unsigned int irq, 
 		INIT_WORK(&hba->rpmb_pm_work, ufs_rpmb_pm_runtime_delay_enable);
 		INIT_WORK(&hba->ffu_pm_work, ufs_ffu_pm_runtime_delay_enable);
 	}
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-	INIT_WORK(&hba->fsr_work, ufshcd_fsr_dump_handler);
-#endif
 	/* Initialize UIC command mutex */
 	mutex_init(&hba->uic_cmd_mutex);
 
@@ -9186,9 +8894,6 @@ int ufshcd_init(struct ufs_hba *hba, void __iomem *mmio_base, unsigned int irq, 
 	mb();
 	wake_lock_init(&ffu_lock, WAKE_LOCK_SUSPEND, "ffu_wakelock");
 
-#ifdef CONFIG_SCSI_UFS_HI1861_VCMD
-	ufshcd_init_fsr_sys(hba);
-#endif
 	ufshcd_init_ufs_temp_sys(hba);
 	/* IRQ registration */
 	err = devm_request_irq(dev, irq, ufshcd_intr, IRQF_SHARED, UFSHCD, hba);
