@@ -309,93 +309,6 @@ static ssize_t show_close_thres(const struct cluster_data *state,
 	return scnprintf(buf, PAGE_SIZE, "%u\n", state->close_thres);/* unsafe_function_ignore: scnprintf */
 }
 
-
-#ifdef CONFIG_HISI_DEBUG_FS
-static ssize_t show_need_cpus(const struct cluster_data *state, char *buf)
-{
-	return scnprintf(buf, PAGE_SIZE, "%u\n", state->need_cpus);/* unsafe_function_ignore: scnprintf */
-}
-
-static ssize_t show_active_cpus(const struct cluster_data *state, char *buf)
-{
-	return scnprintf(buf, PAGE_SIZE, "%u\n", state->active_cpus);/* unsafe_function_ignore: scnprintf */
-}
-
-static ssize_t show_global_state(const struct cluster_data *state, char *buf)
-{
-	struct cpu_data *c;
-	struct cluster_data *cluster;
-	ssize_t count = 0;
-	int cpu;
-	unsigned long flags;
-
-	spin_lock_irqsave(&state_lock, flags);
-	for_each_possible_cpu(cpu) {
-		c = &per_cpu(cpu_state, cpu);
-		cluster = c->cluster;
-		if (!cluster)
-			continue;
-
-		if (!cluster->inited)
-			continue;
-
-		update_isolated_time(c);
-
-		count += scnprintf(buf + count, PAGE_SIZE - count,
-				  "CPU%u\n", cpu);/* unsafe_function_ignore: scnprintf */
-		count += scnprintf(buf + count, PAGE_SIZE - count,
-				  "\tOnline: %u\n",
-				  cpu_online(cpu));/* unsafe_function_ignore: scnprintf */
-		count += scnprintf(buf + count, PAGE_SIZE - count,
-				  "\tIsolated: %u\n",
-				  cpu_isolated(cpu));/* unsafe_function_ignore: scnprintf */
-		count += scnprintf(buf + count, PAGE_SIZE - count,
-				  "\tIsolate cnt: %llu\n",
-				  c->isolate_cnt);/* unsafe_function_ignore: scnprintf */
-		count += scnprintf(buf + count, PAGE_SIZE - count,
-				  "\tIsolated time: %llu\n",
-				  c->isolated_time);/* unsafe_function_ignore: scnprintf */
-		count += scnprintf(buf + count, PAGE_SIZE - count,
-				  "\tFirst CPU: %u\n",
-				  cluster->first_cpu);/* unsafe_function_ignore: scnprintf */
-		count += scnprintf(buf + count, PAGE_SIZE - count,
-				  "\tLoad%%: %u\n",
-				  c->load);/* unsafe_function_ignore: scnprintf */
-		count += scnprintf(buf + count, PAGE_SIZE - count,
-				  "\tIs busy: %u\n",
-				  c->is_busy);/* unsafe_function_ignore: scnprintf */
-		count += scnprintf(buf + count, PAGE_SIZE - count,
-				  "\tNot preferred: %u\n",
-				  c->not_preferred);/* unsafe_function_ignore: scnprintf */
-
-		if (cpu != cluster->first_cpu)
-			continue;
-
-		count += scnprintf(buf + count, PAGE_SIZE - count,
-				  "\tNr running: %u\n",
-				  cluster->nrrun);/* unsafe_function_ignore: scnprintf */
-		count += scnprintf(buf + count, PAGE_SIZE - count,
-				  "\tMax nr running: %u\n",
-				  cluster->max_nrrun);/* unsafe_function_ignore: scnprintf */
-		count += scnprintf(buf + count, PAGE_SIZE - count,
-				  "\tActive CPUs: %u\n",
-				  get_active_cpu_count(cluster));/* unsafe_function_ignore: scnprintf */
-		count += scnprintf(buf + count, PAGE_SIZE - count,
-				  "\tNeed CPUs: %u\n",
-				  cluster->need_cpus);/* unsafe_function_ignore: scnprintf */
-		count += scnprintf(buf + count, PAGE_SIZE - count,
-				  "\tNr isolated CPUs: %u\n",
-				  cluster->nr_isolated_cpus);/* unsafe_function_ignore: scnprintf */
-		count += scnprintf(buf + count, PAGE_SIZE - count,
-				  "\tBoost: %u\n",
-				  cluster->boost);/* unsafe_function_ignore: scnprintf */
-	}
-	spin_unlock_irqrestore(&state_lock, flags);
-
-	return count;
-}
-#endif
-
 static ssize_t store_not_preferred(struct cluster_data *state,
 				   const char *buf, size_t count)
 {
@@ -543,11 +456,6 @@ core_ctl_attr_rw(idle_thres);
 core_ctl_attr_rw(task_thres);
 core_ctl_attr_rw(open_thres);
 core_ctl_attr_rw(close_thres);
-#ifdef CONFIG_HISI_DEBUG_FS
-core_ctl_attr_ro(need_cpus);
-core_ctl_attr_ro(active_cpus);
-core_ctl_attr_ro(global_state);
-#endif
 core_ctl_attr_rw(not_preferred);
 core_ctl_attr_rw(update_interval_ms);
 core_ctl_attr_rw(boost);
@@ -563,11 +471,6 @@ static struct attribute *default_attrs[] = {
 	&task_thres.attr,
 	&open_thres.attr,
 	&close_thres.attr,
-#ifdef CONFIG_HISI_DEBUG_FS
-	&need_cpus.attr,
-	&active_cpus.attr,
-	&global_state.attr,
-#endif
 	&not_preferred.attr,
 	&update_interval_ms.attr,
 	&boost.attr,

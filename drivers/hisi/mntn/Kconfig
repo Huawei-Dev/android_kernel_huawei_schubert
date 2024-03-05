@@ -31,9 +31,3 @@ config HISI_MNTNDUMP
         default n
         help
            Say 'Y' here if you want to support mntn dump.
-
-config HISI_DEBUG_FS
-	bool "Hisilicon platform debugfs"
-	depends on DEBUG_FS
-	help
-		hisi debugfs disable by self

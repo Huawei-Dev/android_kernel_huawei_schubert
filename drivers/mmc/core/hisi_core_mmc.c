@@ -37,10 +37,6 @@ extern int mmc_blk_cmdq_halt(struct mmc_card *card);
 bool g_mmc_reset_status;
 #endif
 
-#if defined(CONFIG_HISI_DEBUG_FS)
-extern unsigned int sd_test_reset_flag;
-#endif
-
 void mmc_power_up_vcc(struct mmc_host *host,u32 ocr)
 {
 	if (host->ios.power_mode == MMC_POWER_UP)
@@ -65,7 +61,6 @@ void mmc_power_up_vcc(struct mmc_host *host,u32 ocr)
 	mmc_delay(10);
 
 }
-
 
 void mmc_power_off_vcc(struct mmc_host *host)
 {
@@ -145,8 +140,6 @@ int mmc_card_can_sleep(struct mmc_host *host)
        return 0;
 }
 EXPORT_SYMBOL(mmc_card_can_sleep);
-
-
 
 /*
  * Turn the cache ON/OFF.
@@ -835,9 +828,6 @@ static int mmc_do_sd_reset(struct mmc_host *host)
 		host->ops->hw_reset(host);
 
 	/*clear the reset flag after reset has been done*/
-#if defined(CONFIG_HISI_DEBUG_FS)
-	sd_test_reset_flag = 0;
-#endif
 	/* Only for K930/920 SD slow down clk*/
 	if (host->ops->slowdown_clk)
 		host->ops->slowdown_clk(host, host->ios.timing);
@@ -882,7 +872,6 @@ int mmc_sd_reset(struct mmc_host *host)
 }
 EXPORT_SYMBOL(mmc_sd_reset);
 
-/*低速卡，设定频率25M  设置卡位宽*/
 void mmc_select_new_sd(struct mmc_card *card)
 {
 	unsigned int max_dtr;
@@ -894,8 +883,6 @@ void mmc_select_new_sd(struct mmc_card *card)
 	}
 	mmc_set_clock(card->host, max_dtr);
 }
-
-
 
 /*********************wifi ops begin**********************/
 int mmc_power_save_host_for_wifi(struct mmc_host *host)

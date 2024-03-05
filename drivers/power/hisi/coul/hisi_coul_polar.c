@@ -404,79 +404,6 @@ static int interpolate_curr_vector(const int *x_array, int rows, int x)
     return index;
 }
 
-#ifdef CONFIG_HISI_DEBUG_FS
-/*******************************************************
-  Function:       interpolate_polar_ocv
-  Description:    look for ocv according to temp, lookup table and pc
-  Input:
-                  struct pc_temp_ocv_lut *lut      ---- lookup table
-                  int batt_temp_degc               ---- battery temperature
-                  int pc                           ---- percent of uah
-  Output:         NULL
-  Return:         percent of uah
-********************************************************/
-static int interpolate_polar_ocv(polar_ocv_tbl *lut,
-                int batt_temp_degc, int pc)
-{
-    int i, ocvrow1, ocvrow2, ocv;
-    int rows, cols;
-    int row1 = 0;
-    int row2 = 0;
-    if( NULL == lut ) {
-        polar_err("NULL point in [%s]\n", __func__);
-        return -1;
-    }
-
-    if (0 >= lut->rows || 0 >= lut->cols) {
-        polar_err("lut mismatch [%s]\n", __func__);
-        return -1;
-    }
-    rows = lut->rows;
-    cols = lut->cols;
-    interpolate_find_pos(lut->percent, rows, pc, &row1, &row2);
-
-    if (batt_temp_degc > lut->temp[0])
-        batt_temp_degc = lut->temp[0];
-    if (batt_temp_degc < lut->temp[cols - 1])
-        batt_temp_degc = lut->temp[cols - 1];
-
-    for (i = 0; i < cols; i++)
-        if (batt_temp_degc >= lut->temp[i])
-            break;
-    if ((batt_temp_degc == lut->temp[i]) || (0 == i)) {
-        ocv = polar_linear_interpolate(
-        lut->ocv[row1][i],
-        lut->percent[row1],
-        lut->ocv[row2][i],
-        lut->percent[row2],
-        pc);
-        return ocv;
-    }
-
-    ocvrow1 = polar_linear_interpolate(
-        lut->ocv[row1][i - 1],
-        lut->temp[i - 1],
-        lut->ocv[row1][i],
-        lut->temp[i],
-        batt_temp_degc);
-
-    ocvrow2 = polar_linear_interpolate(
-        lut->ocv[row2][i - 1],
-        lut->temp[i - 1],
-        lut->ocv[row2][i],
-        lut->temp[i],
-        batt_temp_degc);
-
-    ocv = polar_linear_interpolate(
-        ocvrow1,
-        lut->percent[row1],
-        ocvrow2,
-        lut->percent[row2],
-        pc);
-
-    return ocv;
-}
-#endif
 /*******************************************************
   Function:        get_polar_vector
   Description:     获取极化矢量数据
@@ -788,41 +715,6 @@ static int polar_partition_data_check(polar_learn_tbl* lut)
     }
     return 0;
 }
-#ifdef CONFIG_HISI_DEBUG_FS
-/****************************************************************************//**
- * @brief      : hisee_pdswipe_record_show
- * @param[in]  : dev
- * @param[in]  : attr
- * @param[in]  : buf
- * @return     : ::ssize_t
- * @note       :
-********************************************************************************/
-ssize_t polar_self_learn_show(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	void *p_buf = NULL;
-	u32	cnt=0;
-
-	p_buf = kzalloc(POLAR_LUT_SIZE, GFP_KERNEL);
-	if (NULL == p_buf) {
-		polar_err("%s()-line=%d\n", __func__, __LINE__);
-		return 0;
-	}
-	/*todo:copy data from emmc, to save in user buffer*/
-	cnt = polar_get_flash_data(p_buf, POLAR_LUT_SIZE, POLAR_LUT_OFFSET);
-	if (cnt > 0) {
-		if (memcpy_s((void *)buf, PAGE_SIZE, (const void *)p_buf, min_t(size_t, POLAR_LUT_SIZE, PAGE_SIZE))) {
-			polar_err("%s()-line=%d\n", __func__, __LINE__);
-		}
-	} else {
-		polar_err("%s()-line=%d\n", __func__, __LINE__);
-	}
-
-	kfree(p_buf);
-	p_buf = NULL;
-
-	return (ssize_t)cnt;
-}/*lint !e715*/
-#endif
 
 /*******************************************************
   Function:        store_trained_a
@@ -2071,91 +1963,7 @@ void clear_polar_err_b(void)
     return;
 }
 EXPORT_SYMBOL(clear_polar_err_b);
-#ifdef CONFIG_HISI_DEBUG_FS
-int test_polar_ocv_tbl_lookup(int soc, int batt_temp_degc)
-{
-    int ocv = 0;
-    ocv = interpolate_polar_ocv(&polar_ocv_lut, batt_temp_degc, soc);
-    return ocv;
-}
 
-int test_res_tbl_lookup(int soc, int batt_temp_degc, int curr)
-{
-    int res = 0;
-    res = interpolate_two_dimension(&polar_res_lut,
-            batt_temp_degc, soc, curr);
-    return res;
-}
-
-int test_vector_res_tbl_lookup(int soc, int batt_temp_degc, int curr)
-{
-    int res_vector = 0;
-    res_vector = get_polar_vector_res(&polar_res_lut,
-            batt_temp_degc, soc, curr);
-    return res_vector;
-}
-
-int test_vector_value_tbl_lookup(int soc, int batt_temp_degc, int curr)
-{
-    int polar_vector = 0;
-    polar_vector = get_polar_vector_value(&polar_vector_lut,
-            batt_temp_degc, soc, curr, 0);
-    return polar_vector;
-}
-
-int test_vector_curr_lookup(int curr)
-{
-    return interpolate_curr_vector(polar_curr_vector_interval,
-            POLAR_CURR_ARRAY_VECTOR_NUM, curr);
-}
-int test_nearest_lookup(int soc)
-{
-    return interpolate_nearest_x(polar_resistence_pc_points,
-            POLAR_RES_PC_CURR_ROWS, soc);
-}
-
-int test_get_trained_a(int temp, int soc)
-{
-    return get_trained_a(&polar_learn_lut,temp,soc);
-}
-
-int test_store_trained_a(int temp, int soc, long a, long polar_vol_uv)
-{
-    store_trained_a(&polar_learn_lut, temp, soc, a, polar_vol_uv);
-    return 0;
-}
-
-int get_last_5s_curr(void)
-{
-    struct hisi_polar_device *di = g_polar_di;
-
-    if (NULL == di)
-        return -1;
-    return  di->last_avgcurr_5s;
-}
-
-int get_last_25s_curr(void)
-{
-    struct hisi_polar_device *di = g_polar_di;
-
-    if (NULL == di)
-        return -1;
-    return  di->last_avgcurr_25s;
-}
-
-int test_could_vbat_learn_a (int ocv_soc_mv,int vol_now_mv, int cur,
-                                long polar_vol_uv,int temp, int soc)
-
-{
-    struct hisi_polar_device *di = g_polar_di;
-
-    if (NULL == di)
-        return -1;
-    polar_info("ocv:%d,vbat:%d,curr:%d,polar_vol:%ld,temp:%d,soc:%d",
-        ocv_soc_mv,vol_now_mv, cur, polar_vol_uv,temp, soc);
-    return could_vbat_learn_a(di, ocv_soc_mv,vol_now_mv, cur, polar_vol_uv,temp, soc);
-}
-#endif
 /*******************************************************
   Function:       get_batt_phandle
   Description:    look for batt_phandle with id_voltage
@@ -2340,9 +2148,7 @@ clr:
 out:
     return ret;
 }
-#ifdef CONFIG_HISI_DEBUG_FS
-static DEVICE_ATTR(self_learn_value, (S_IRUSR | S_IRGRP), polar_self_learn_show, NULL);
-#endif
+
 /*******************************************************
   Function:        polar_info_init
   Description:     极化相关数据初始化(根据电池容量初始化电流档位)
@@ -2378,11 +2184,6 @@ static int polar_info_init(struct hisi_polar_device *di)
             0, sizeof(polar_vector_lut.value));
     memset_s(polar_avg_curr_info, sizeof(polar_avg_curr_info),
             0, sizeof(polar_avg_curr_info));
-#ifdef CONFIG_HISI_DEBUG_FS
-    ret = device_create_file(di->dev, &dev_attr_self_learn_value);
-    if (ret)
-        polar_err("failed to create file");
-#endif
     ret1 = get_polar_dts_info(di);
     if (ret1)
         polar_err("get dts info failed\n");
@@ -2470,9 +2271,6 @@ static int hisi_coul_polar_remove(struct platform_device *pdev)
     hrtimer_cancel(&di->coul_sample_timer);
     di = NULL;
     g_polar_di = NULL;
-#ifdef CONFIG_HISI_DEBUG_FS
-    device_remove_file(&pdev->dev, &dev_attr_self_learn_value);
-#endif
     platform_set_drvdata(pdev, NULL);
     return 0;
 }

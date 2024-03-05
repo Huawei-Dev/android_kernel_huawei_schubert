@@ -66,7 +66,6 @@
 #include "ufs-kirin.h"
 #include "unipro.h"
 #include "ufs_quirks.h"
-#include "ufs_debugfs.h"
 #include "dsm_ufs.h"
 #include "ufs_vendor_mode.h"
 #include "ufs-kirin-lib.h"
@@ -77,13 +76,8 @@
 #include "hisi_ufs_bkops.h"
 #endif
 
-#ifdef CONFIG_HISI_DEBUG_FS
-#define HISI_UFS_BUG_ON(x) 	do {BUG_ON(x);} while(0)
-#define HISI_UFS_BUG() 		do {BUG();} while(0)
-#else
 #define HISI_UFS_BUG_ON(x) 	do {} while(0)
 #define HISI_UFS_BUG() 		do {} while(0)
-#endif
 
 #define UFSHCD_ENABLE_INTRS	(UTP_TRANSFER_REQ_COMPL |\
 				 UTP_TASK_REQ_COMPL |\
@@ -93,9 +87,6 @@
 	defined CONFIG_SCSI_UFS_LIBRA)
 #define OLD_DEVICE_CONSTRAINT
 #endif
-
-
-
 
 /* UIC command timeout, unit: ms */
 #define UIC_CMD_TIMEOUT	500
@@ -307,70 +298,7 @@ static void ufshcd_print_host_regs(struct ufs_hba *hba)
 	ufshcd_print_uic_err_hist(hba, &hba->ufs_stats.tl_err, "tl_err");
 	ufshcd_print_uic_err_hist(hba, &hba->ufs_stats.dme_err, "dme_err");
 }
-#ifdef CONFIG_HISI_DEBUG_FS
-static
-void ufshcd_print_trs(struct ufs_hba *hba, unsigned long bitmap, bool pr_prdt)
-{
-	struct ufshcd_lrb *lrbp;
-	int prdt_length;
-	int tag;
 
-	pr_prdt = false;
-
-	for_each_set_bit(tag, &bitmap, hba->nutrs) {
-		lrbp = &hba->lrb[tag];
-
-		dev_err(hba->dev, "UPIU[%d] - issue time %lld - complete time %lld\n",
-				tag, lrbp->issue_time_stamp, lrbp->complete_time_stamp);
-		dev_err(hba->dev,
-			"UPIU[%d] - Transfer Request Descriptor phys@0x%llx\n",
-			tag, (u64)lrbp->utrd_dma_addr);
-
-		ufshcd_hex_dump("UPIU TRD: ", lrbp->utr_descriptor_ptr,
-				sizeof(struct utp_transfer_req_desc));
-		dev_err(hba->dev, "UPIU[%d] - Request UPIU phys@0x%llx\n", tag,
-			(u64)lrbp->ucd_req_dma_addr);
-		ufshcd_hex_dump("UPIU REQ: ", lrbp->ucd_req_ptr,
-				sizeof(struct utp_upiu_req));
-		dev_err(hba->dev, "UPIU[%d] - Response UPIU phys@0x%llx\n", tag,
-			(u64)lrbp->ucd_rsp_dma_addr);
-		ufshcd_hex_dump("UPIU RSP: ", lrbp->ucd_rsp_ptr,
-				sizeof(struct utp_upiu_rsp));
-
-		prdt_length = le16_to_cpu(
-			lrbp->utr_descriptor_ptr->prd_table_length);
-		dev_err(hba->dev,
-			"UPIU[%d] - PRDT - %d entries  phys@0x%llx\n",
-			tag, prdt_length,
-			(u64)lrbp->ucd_prdt_dma_addr);
-
-		if (pr_prdt)
-			ufshcd_hex_dump("UPIU PRDT: ", lrbp->ucd_prdt_ptr,
-				sizeof(struct ufshcd_sg_entry) * prdt_length);
-	}
-}
-
-static void ufshcd_print_tmrs(struct ufs_hba *hba, unsigned long bitmap)
-{
-	struct utp_task_req_desc *tmrdp;
-	int tag;
-
-	for_each_set_bit(tag, &bitmap, hba->nutmrs) {
-		tmrdp = &hba->utmrdl_base_addr[tag];
-		dev_err(hba->dev, "TM[%d] - Task Management Header\n", tag);
-		ufshcd_hex_dump("TM TRD: ", &tmrdp->header,
-				sizeof(struct request_desc_header));
-		dev_err(hba->dev, "TM[%d] - Task Management Request UPIU\n",
-				tag);
-		ufshcd_hex_dump("TM REQ: ", tmrdp->task_req_upiu,
-				sizeof(struct utp_upiu_req));
-		dev_err(hba->dev, "TM[%d] - Task Management Response UPIU\n",
-				tag);
-		ufshcd_hex_dump("TM RSP: ", tmrdp->task_rsp_upiu,
-				sizeof(struct utp_task_req_desc));
-	}
-}
-#else
 static
 void ufshcd_print_trs(struct ufs_hba *hba, unsigned long bitmap, bool pr_prdt)
 {
@@ -381,7 +309,7 @@ static void ufshcd_print_tmrs(struct ufs_hba *hba, unsigned long bitmap)
 {
 	return;
 }
-#endif
+
 static void ufshcd_print_host_state(struct ufs_hba *hba)
 {
 	dev_err(hba->dev, "UFS Host state=%d\n", hba->ufshcd_state);
@@ -1053,7 +981,6 @@ void ufshcd_send_command(struct ufs_hba *hba, unsigned int task_tag)
 
 	/* Make sure that doorbell is committed immediately */
 	wmb();
-	ufshcd_update_tag_stats(hba, task_tag);
 
 }
 /*lint -restore*/
@@ -3752,7 +3679,6 @@ int ufshcd_change_power_mode(struct ufs_hba *hba,
 			| pwr_mode->pwr_tx);
 
 	if (ret) {
-		ufshcd_update_error_stats(hba, UFS_ERR_POWER_MODE_CHANGE);
 		dev_err(hba->dev,
 			"%s: power mode change failed %d\n", __func__, ret);
 	} else {
@@ -4074,7 +4000,6 @@ static int ufshcd_link_startup(struct ufs_hba *hba)
 			}
 
 		} else {
-			ufshcd_update_error_stats(hba, UFS_ERR_LINKSTARTUP);
 			ret = ufshcd_wait_for_register(hba, REG_INTERRUPT_STATUS,
 						 UIC_LINK_STARTUP,
 						 UIC_LINK_STARTUP, 1000, 50, false);
@@ -4609,7 +4534,6 @@ check:
 
 		cmd = lrbp->cmd;
 		if (cmd && lrbp->command_type != UTP_CMD_TYPE_DEV_MANAGE) {
-			ufshcd_update_tag_stats_completion(hba, cmd);
 			result = ufshcd_transfer_rsp_status(hba, lrbp);
 			if (!(hba->host->queue_quirk_flag & SHOST_QUIRK(SHOST_QUIRK_UNMAP_IN_SOFTIRQ)))
 				scsi_dma_unmap(cmd);
@@ -4649,7 +4573,6 @@ check:
 				complete(hba->dev_cmd.complete);
 		}
 		lrbp->complete_time_stamp = hisi_getcurtime();
-		update_req_stats(hba, lrbp);
 	}
 	/* clear corresponding bits of completed commands */
 	hba->outstanding_reqs ^= completed_reqs;
@@ -5030,13 +4953,6 @@ static void ufshcd_err_handler_do_reset(
 		(ufshcd_is_auto_hibern8_allowed(hba) &&
 			(hba->saved_err &
 				(UIC_HIBERNATE_ENTER | UIC_HIBERNATE_EXIT))))
-		ufshcd_update_error_stats(hba, UFS_ERR_INT_FATAL_ERRORS);
-
-	if (hba->saved_err & UIC_ERROR)
-		ufshcd_update_error_stats(hba, UFS_ERR_INT_UIC_ERROR);
-
-	if (err_xfer || err_tm)
-		ufshcd_update_error_stats(hba, UFS_ERR_CLEAR_PEND_XFER_TM);
 
 	/*
 	 * ufshcd_reset_and_restore() does the link reinitialization
@@ -5398,25 +5314,6 @@ void ufs_idle_intr_toggle(struct ufs_hba *hba, int enable)
 static void ufshcd_idle_handler(struct ufs_hba *hba)
 {
 	struct blk_dev_lld *lld = &(hba->host->tag_set.lld_func);
-#ifdef CONFIG_HISI_DEBUG_FS
-	static DEFINE_RATELIMIT_STATE(idle_print_rs, (30 * HZ), 1);
-	u32 utp_tx_doorbell;
-	u32 utp_task_doorbell;
-
-	if (!hba->idle_intr_disabled) {
-		utp_tx_doorbell = ufshcd_readl(hba, REG_UTP_TRANSFER_REQ_DOOR_BELL);
-		utp_task_doorbell = ufshcd_readl(hba, REG_UTP_TASK_REQ_DOOR_BELL);
-		if (__ratelimit(&idle_print_rs)) {
-			if (utp_tx_doorbell || utp_task_doorbell)
-				dev_err(hba->dev, "%s,Got Idle interrupt while utp_tx_doorbell: 0x%x, utp_task_doorbell: 0x%x\n",
-						__func__, utp_tx_doorbell, utp_task_doorbell);
-			else if (unlikely(hba->ufs_idle_intr_verify))
-				dev_info(hba->dev, "%s, Idle interrupt, all the doorbell is 0\n", __func__);
-		}
-	}
-
-	mod_timer(&hba->idle_intr_check_timer, jiffies + msecs_to_jiffies(hba->idle_intr_check_timer_threshold));
-#endif /* CONFIG_HISI_DEBUG_FS */
 	blk_lld_idle_notify(lld);
 }
 
@@ -5792,8 +5689,6 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
 	}
 
 	lrbp = &hba->lrb[tag];
-
-	ufshcd_update_error_stats(hba, UFS_ERR_TASK_ABORT);
 
 	/* Print Transfer Request of aborted task */
 	dev_err(hba->dev, "%s: Device abort task at tag %d, lun = %d\n",
@@ -8341,7 +8236,6 @@ set_link_active:
 	if (ufshcd_is_link_hibern8(hba) && !ufshcd_uic_hibern8_exit(hba))
 		ufshcd_set_link_active(hba);
 	else if (ufshcd_is_link_off(hba)) {
-		ufshcd_update_error_stats(hba, UFS_ERR_VOPS_SUSPEND);
 		ret = ufshcd_host_reset_and_restore(hba);
 	}
 vops_resume_after_set_link_state:
@@ -8358,9 +8252,6 @@ enable_gating:
 		ufshcd_enable_auto_hibern8(hba);
 out:
 	hba->pm_op_in_progress = 0;
-
-	if (ret)
-		ufshcd_update_error_stats(hba, UFS_ERR_SUSPEND);
 
 	return ret;
 }
@@ -8449,9 +8340,6 @@ vendor_suspend:
 disable_vreg:
 out:
 	hba->pm_op_in_progress = 0;
-
-	if (ret)
-		ufshcd_update_error_stats(hba, UFS_ERR_RESUME);
 
 	return ret;
 }
@@ -8690,7 +8578,6 @@ void ufshcd_remove(struct ufs_hba *hba)
 
 	ufshcd_hba_exit(hba);
 	ufs_fault_inject_fs_remove();
-	ufsdbg_remove_debugfs(hba);
 }
 EXPORT_SYMBOL_GPL(ufshcd_remove);
 
@@ -8937,7 +8824,6 @@ int ufshcd_init(struct ufs_hba *hba, void __iomem *mmio_base, unsigned int irq, 
 
 	async_schedule(ufshcd_async_scan, hba);
 
-	ufsdbg_add_debugfs(hba);
 	ufs_fault_inject_fs_setup();
 
 	return 0;

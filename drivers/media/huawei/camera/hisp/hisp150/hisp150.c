@@ -1123,12 +1123,6 @@ static struct rpmsg_driver rpmsg_hisp150_driver = {
 	.remove = hisp150_rpmsg_remove,
 };
 
-
-#ifdef CONFIG_HISI_DEBUG_FS
-static struct device_attribute hisp_ddr_freq_ctrl_attr =
-    __ATTR(ddr_freq_ctrl, 0660, hisp_ddr_freq_ctrl_show, hisp_ddr_freq_store);
-#endif /* CONFIG_HISI_DEBUG_FS */
-
 static int32_t
 hisp150_platform_probe(
 	struct platform_device* pdev)
@@ -1164,15 +1158,6 @@ hisp150_platform_probe(
     s_hisp150.pdev = pdev;
     s_hisp150.ion_client = NULL;
 
-#ifdef CONFIG_HISI_DEBUG_FS
-	ret = device_create_file(&pdev->dev, &hisp_ddr_freq_ctrl_attr);
-	if (ret < 0) {
-		cam_err("%s failed to creat hisp ddr freq ctrl attribute.", __func__);
-		unregister_rpmsg_driver(&rpmsg_hisp150_driver);
-		hisp_unregister(s_hisp150.pdev);
-		goto error;
-	}
-#endif
 	return 0;
 
 error:
