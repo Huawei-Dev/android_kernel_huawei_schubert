@@ -423,9 +423,6 @@ static void mmc_manage_gp_partitions(struct mmc_card *card, u8 *ext_csd)
 #define MMC_MIN_PART_SWITCH_TIME	300
 extern void mmc_decode_ext_csd_emmc50(struct mmc_card *card, u8 *ext_csd);
 extern void mmc_decode_ext_csd_emmc51(struct mmc_card *card, u8 *ext_csd);
-#ifdef CONFIG_HISI_MMC_MANUAL_BKOPS
-extern void hisi_mmc_enable_hpi_for_micron(struct mmc_card *card, bool *broken_hpi);
-#endif
 /*
  * Decode extended CSD.
  */
@@ -628,9 +625,6 @@ static int mmc_decode_ext_csd(struct mmc_card *card, u8 *ext_csd)
 		}
 
 		/* check whether the eMMC card supports HPI */
-#ifdef CONFIG_HISI_MMC_MANUAL_BKOPS
-		hisi_mmc_enable_hpi_for_micron(card, &broken_hpi);
-#endif
 		if (!mmc_card_broken_hpi(card) &&
 		    !broken_hpi && (ext_csd[EXT_CSD_HPI_FEATURES] & 0x1)) {
 			card->ext_csd.hpi = 1;

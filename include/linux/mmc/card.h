@@ -13,9 +13,6 @@
 #include <linux/device.h>
 #include <linux/mmc/core.h>
 #include <linux/mod_devicetable.h>
-#ifdef CONFIG_HISI_MMC_MANUAL_BKOPS
-#include <linux/hisi-bkops-core.h>
-#endif
 #ifdef CONFIG_HUAWEI_EMMC_DSM
 #define EXT_CSD_PRE_EOL_INFO_NORMAL     0x01
 #define EXT_CSD_PRE_EOL_INFO_WARNING     0x02
@@ -372,10 +369,6 @@ struct mmc_card {
 	int mmc_tags_depth;
 #ifdef CONFIG_HUAWEI_EMMC_DSM
 	u8 *cached_ext_csd;
-#endif
-
-#ifdef CONFIG_HISI_MMC_MANUAL_BKOPS
-	struct hisi_bkops *mmc_bkops;
 #endif
 };
 

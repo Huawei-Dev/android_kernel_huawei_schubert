@@ -298,9 +298,6 @@ void mmc_decode_ext_csd_emmc51(struct mmc_card *card, u8 *ext_csd)
 
 
 extern int mmc_screen_test_cache_enable(struct mmc_card *card);
-#ifdef CONFIG_HISI_MMC_MANUAL_BKOPS
-bool hisi_mmc_is_bkops_needed(struct mmc_card *card);
-#endif
 /*enable feature for emmc5.0 or later contains cmdq,barrier and bkops*/
 int mmc_init_card_enable_feature(struct mmc_card *card)
 {
@@ -347,19 +344,9 @@ int mmc_init_card_enable_feature(struct mmc_card *card)
 	 * Enable BKOPS AUTO  feature (if supported)
 	 */
 	if ((host->caps2 & MMC_CAP2_BKOPS_AUTO_CTRL) && (host->pm_flags & MMC_PM_KEEP_POWER) && card->ext_csd.bkops && (card->ext_csd.rev >= 8)) {
-#ifdef CONFIG_HISI_MMC_MANUAL_BKOPS
-		if (hisi_mmc_is_bkops_needed(card)) {
-			err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-				EXT_CSD_BKOPS_EN, EXT_CSD_BKOPS_MANUAL_EN | EXT_CSD_BKOPS_AUTO_EN,
-				card->ext_csd.generic_cmd6_time);
-		} else {
-#endif
 		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
 				EXT_CSD_BKOPS_EN, EXT_CSD_BKOPS_AUTO_EN | (card->ext_csd.man_bkops_en ? EXT_CSD_BKOPS_MANUAL_EN : 0),
 				card->ext_csd.generic_cmd6_time);
-#ifdef CONFIG_HISI_MMC_MANUAL_BKOPS
-		}
-#endif
 		if (err && err != -EBADMSG)
 			return err;
 		if (err) {
@@ -369,10 +356,6 @@ int mmc_init_card_enable_feature(struct mmc_card *card)
 			card->ext_csd.bkops_auto_en = 0;
 		} else {
 			card->ext_csd.bkops_auto_en = 1;
-#ifdef CONFIG_HISI_MMC_MANUAL_BKOPS
-			if (hisi_mmc_is_bkops_needed(card))
-				card->ext_csd.man_bkops_en = 1;
-#endif
 			pr_err("%s: support BKOPS_AUTO_EN, bkops_auto_en=%d\n", __func__, card->ext_csd.bkops_auto_en);
 		}
 	}

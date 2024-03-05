@@ -2891,10 +2891,6 @@ void mmc_blk_hisi_stub_emmc_for_ufs(struct mmc_card *card)
 #endif /* CONFIG_HISI_MMC */
 
 #ifdef CONFIG_HISI_BLK
-#ifdef CONFIG_HISI_MMC_MANUAL_BKOPS
-extern int hisi_mmc_manual_bkops_config(struct request_queue *q);
-extern bool hisi_mmc_is_bkops_needed(struct mmc_card *card);
-#endif
 static void mmc_blk_hisi_cfg_queue_feature(struct mmc_card *card, struct mmc_blk_data *md, int area_type)
 {
 	if (area_type == MMC_BLK_DATA_AREA_MAIN) {
@@ -2906,11 +2902,6 @@ static void mmc_blk_hisi_cfg_queue_feature(struct mmc_card *card, struct mmc_blk
 			blk_queue_dump_register(md->queue.queue, NULL);
 #endif
 			blk_queue_busy_idle_enable(md->queue.queue, 1);
-#ifdef CONFIG_HISI_MMC_MANUAL_BKOPS
-			if (card->ext_csd.man_bkops_en && hisi_mmc_is_bkops_needed(card))
-				hisi_mmc_manual_bkops_config(md->queue.queue);
-#endif
-
 		} else if (mmc_card_sd(card)) {
 			blk_queue_latency_warning_set(md->queue.queue, 5000);
 			blk_queue_dump_register(md->queue.queue, NULL);

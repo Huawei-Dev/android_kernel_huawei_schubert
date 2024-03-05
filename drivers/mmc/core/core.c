@@ -29,9 +29,6 @@
 #include <linux/random.h>
 #include <linux/slab.h>
 #include <linux/of.h>
-#ifdef CONFIG_HISI_MMC_MANUAL_BKOPS
-#include <linux/blkdev.h>
-#endif
 
 #include <linux/mmc/card.h>
 #include <linux/mmc/host.h>
@@ -424,7 +421,6 @@ static int mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
 	return 0;
 }
 
-#ifndef CONFIG_HISI_MMC_MANUAL_BKOPS
 /**
  *	mmc_start_bkops - start BKOPS for supported cards
  *	@card: MMC card to start BKOPS
@@ -497,7 +493,6 @@ void mmc_start_bkops(struct mmc_card *card, bool from_exception)
 out:
 	mmc_release_host(card->host);
 }
-#endif /* CONFIG_HISI_MMC_MANUAL_BKOPS */
 EXPORT_SYMBOL(mmc_start_bkops);
 
 /*
@@ -1062,9 +1057,7 @@ int mmc_wait_for_cmd(struct mmc_host *host, struct mmc_command *cmd, int retries
 #endif
 	return cmd->error;
 }
-
 EXPORT_SYMBOL(mmc_wait_for_cmd);
-#ifndef CONFIG_HISI_MMC_MANUAL_BKOPS
 
 /**
  *	mmc_stop_bkops - stop ongoing BKOPS
@@ -1095,7 +1088,6 @@ int mmc_stop_bkops(struct mmc_card *card)
 	return err;
 }
 EXPORT_SYMBOL(mmc_stop_bkops);
-#endif /* CONFIG_HISI_MMC_MANUAL_BKOPS */
 
 int mmc_read_bkops_status(struct mmc_card *card)
 {
@@ -1334,10 +1326,6 @@ void mmc_get_card(struct mmc_card *card)
 	if (mmc_blk_cmdq_hangup(card)) {
 		pr_err("%s: cmdq hangup err.\n", __func__);
 	}
-#endif
-#ifdef CONFIG_HISI_MMC_MANUAL_BKOPS
-	if (mmc_card_doing_bkops(card) && mmc_stop_bkops(card))
-		pr_err("%s: mmc_stop_bkops failed!\n", __func__);
 #endif
 }
 EXPORT_SYMBOL(mmc_get_card);
