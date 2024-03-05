@@ -29,11 +29,6 @@
 #include <linux/kthread.h>
 #include <linux/i2c.h>
 #include <linux/of_gpio.h>
-#ifdef CONFIG_SCSI_UFS_ENHANCED_INLINE_CRYPTO_V2
-#include <teek_client_api.h>
-#include <teek_client_id.h>
-#include <teek_client_constants.h>
-#endif
 #include <linux/mfd/hisi_pmic.h>
 #include <pmic_interface.h>
 
@@ -44,21 +39,6 @@
 #include "dsm_ufs.h"
 #ifdef CONFIG_HISI_UFS_MANUAL_BKOPS
 #include "hisi_ufs_bkops.h"
-#endif
-
-#ifdef CONFIG_SCSI_UFS_ENHANCED_INLINE_CRYPTO_V2
-/*uuid to TA: 54ff868f-0d8d-4495-9d95-8e24b2a08274*/
-#define UUID_TEEOS_UFS_InlineCrypto \
-{ \
-	0x54ff868f,\
-	0x0d8d,\
-	0x4495,\
-	{ \
-		0x9d, 0x95, 0x8e, 0x24, 0xb2, 0xa0, 0x82, 0x74 \
-	} \
-}
-
-#define CMD_ID_UFS_KEY_RESTORE		(3)
 #endif
 
 struct st_caps_map {
@@ -81,140 +61,6 @@ early_param("ufs_product_name", early_parse_ufs_product_name_cmdline);
 /*lint -e528 +esym(528,*)*/
 /* Here external BL31 function declaration for UFS inline encrypt*/
 
-#ifdef CONFIG_SCSI_UFS_ENHANCED_INLINE_CRYPTO_V2
-TEEC_Context *context = NULL;
-TEEC_Session *session = NULL;
-
-static int uie_open_session(void)
-{
-	u32 root_id = 2012;
-	const char *package_name = "ufs_key_restore";
-	TEEC_UUID svc_id = UUID_TEEOS_UFS_InlineCrypto;
-	TEEC_Operation op = {0};
-	TEEC_Result result;
-	u32 origin = 0;
-	int ret = 0;
-
-	pr_err("%s: start ++\n", __func__);
-
-	context = kzalloc(sizeof(TEEC_Context), GFP_KERNEL);
-	if (!context) {
-		ret = -ENOMEM;
-		goto no_memory;
-	}
-	session = kzalloc(sizeof(TEEC_Session), GFP_KERNEL);
-	if (!session) {
-		ret = -ENOMEM;
-		goto free_context;
-	}
-
-	/* initialize TEE environment */
-	result = TEEK_InitializeContext(NULL, context);
-	if(result != TEEC_SUCCESS) {
-		pr_err("%s: InitializeContext failed, Ret=0x%x\n",
-				  __func__, result);
-		ret = -1;
-		goto cleanup_1;
-	}
-
-	/* operation params create  */
-	op.started = 1;
-	/*open session*/
-	op.paramTypes = TEEC_PARAM_TYPES(TEEC_NONE,
-			    TEEC_NONE,
-			    TEEC_MEMREF_TEMP_INPUT,
-			    TEEC_MEMREF_TEMP_INPUT);
-
-	op.params[2].tmpref.buffer = (void *)&root_id;
-	op.params[2].tmpref.size = sizeof(root_id);
-	op.params[3].tmpref.buffer = (void *)package_name;
-	op.params[3].tmpref.size = (size_t)(strlen(package_name) + 1);
-
-	result = TEEK_OpenSession(context, session, &svc_id,
-				  TEEC_LOGIN_IDENTIFY, NULL,
-				  &op, &origin);
-	if(result != TEEC_SUCCESS) {
-		pr_err("%s: OpenSession fail, RC=0x%x, RO=0x%x\n",
-				  __func__, result, origin);
-		ret = -1;
-		goto cleanup_2;
-	}
-
-	pr_err("%s: end ++\n", __func__);
-	return ret;
-
-cleanup_2:
-	TEEK_FinalizeContext(context);
-cleanup_1:
-	if (session) {
-		kfree(session);
-		session = NULL;
-	}
-free_context:
-	if (context) {
-		kfree(context);
-		context = NULL;
-	}
-no_memory:
-	pr_err("%s: failed end ++\n", __func__);
-	return ret;
-}
-
-static int set_key_in_tee(void)
-{
-	u32 root_id = 2012;
-	const char *package_name = "ufs_key_restore";
-	TEEC_Operation op = {0};
-	TEEC_Result result;
-	u32 origin = 0;
-	int ret = 0;
-
-	if (!session) {
-		pr_err("%s: session is null\n", __func__);
-		return ret;
-	}
-
-	pr_err("%s: start ++\n", __func__);
-
-	/* operation params create  */
-	op.started = 1;
-	/*open session*/
-	op.paramTypes = TEEC_PARAM_TYPES(TEEC_NONE, TEEC_NONE,
-				  TEEC_NONE, TEEC_NONE);
-
-	op.params[2].tmpref.buffer = (void *)&root_id;
-	op.params[2].tmpref.size = sizeof(root_id);
-	op.params[3].tmpref.buffer = (void *)package_name;
-	op.params[3].tmpref.size = (size_t)(strlen(package_name) + 1);
-
-	result = TEEK_InvokeCommand(session,
-				    CMD_ID_UFS_KEY_RESTORE,
-				    &op, &origin);
-	if (result != TEEC_SUCCESS) {
-		pr_err("%s: Invoke CMD fail, RC=0x%x, RO=0x%x\n",
-				  __func__, result, origin);
-		ret = -1;
-	}
-
-	pr_err("%s: end ++\n", __func__);
-	return ret;
-}
-
-static int ufs_kirin_set_key(void)
-{
-	int err, i;
-
-	for (i = 0; i < 2; i++) {
-		err = set_key_in_tee();
-		if (!err)
-			return err;
-
-		pr_err("%s: set ufs crypto key error, times: %d\n", __func__, i + 1);
-	}
-
-	return err;
-}
-#else
 #ifdef CONFIG_SCSI_UFS_INLINE_CRYPTO
 noinline int atfd_hisi_uie_smc(u64 _function_id, u64 _arg0, u64 _arg1, u64 _arg2)
 {
@@ -233,7 +79,6 @@ noinline int atfd_hisi_uie_smc(u64 _function_id, u64 _arg0, u64 _arg1, u64 _arg2
 
 	return (int)function_id;
 }
-#endif
 #endif
 
 static u64 kirin_ufs_dma_mask = DMA_BIT_MASK(64);/*lint !e598 !e648*/
@@ -560,47 +405,12 @@ int ufs_kirin_uie_config_init(struct ufs_hba *hba)
 	reg_value |= CRYPTO_GENERAL_ENABLE;
 	ufshcd_writel(hba, reg_value, REG_CONTROLLER_ENABLE);
 
-#ifdef CONFIG_SCSI_UFS_ENHANCED_INLINE_CRYPTO_V2
-	dev_err(hba->dev, "%s: UFS inline crypto V2.0.\n", __func__);
-	if (ufshcd_eh_in_progress(hba)) {
-		err = ufs_kirin_set_key();
-		if (err)
-			BUG();
-	}
-#else
 	/* Here UFS driver, which set SECURITY reg 0x1 in BL31,
 	 * has the permission to write scurity key registers.
 	 */
 	err = atfd_hisi_uie_smc(RPMB_SVC_UFS_TEST, 0x0, 0x0, 0x0);
-#ifdef CONFIG_SCSI_UFS_ENHANCED_INLINE_CRYPTO
-	if(err) {
-		dev_err(hba->dev, "%s: first set ufs inline key failed,try again.\n", __func__);
-		err = atfd_hisi_uie_smc(RPMB_SVC_UFS_TEST, 0x0, 0x0, 0x0);
-		if(err)
-			BUG_ON(1);
-	}
-#endif
-#endif
-
 	return err;
 }
-
-#ifdef CONFIG_SCSI_UFS_ENHANCED_INLINE_CRYPTO
-/*generate the key index use bkdrhash alg,we limit
- *the result in the range of 0~29 */
-static u32 bkdrhash_alg(u8 *str, int len)
-{
-	u32 seed = 131;
-	u32 hash = 0;
-	int i;
-
-	for (i = 0; i < len; i++) {
-		hash = hash * seed + str[i];
-	}
-
-	return (hash & 0xFFFFFFFF);
-}
-#endif
 
 /* configure UTRD to enable cryptographic operations for this transaction. */
 void ufs_kirin_uie_utrd_prepare(struct ufs_hba *hba,
@@ -611,11 +421,7 @@ void ufs_kirin_uie_utrd_prepare(struct ufs_hba *hba,
 	u64 dun;
 	u32 crypto_enable;
 	u32 crypto_cci;
-#ifdef CONFIG_SCSI_UFS_ENHANCED_INLINE_CRYPTO
-	u32 hash_res;
-#else
 	unsigned long flags;
-#endif
 	/*
 	 * According to UFS 2.1 SPEC
 	 * decrypte incoming payload if the command is SCSI READ operation
@@ -633,26 +439,10 @@ void ufs_kirin_uie_utrd_prepare(struct ufs_hba *hba,
 	}
 
 	if (lrbp->cmd->request && lrbp->cmd->request->hisi_req.ci_key) {
-#ifdef CONFIG_SCSI_UFS_ENHANCED_INLINE_CRYPTO
-		hash_res = bkdrhash_alg((u8 *)lrbp->cmd->request->hisi_req.ci_key,
-				lrbp->cmd->request->hisi_req.ci_key_len);
-#ifdef CONFIG_SCSI_UFS_ENHANCED_INLINE_CRYPTO_V2
-		if ((lrbp->cmd->request->hisi_req.ci_key_index < 0) || (lrbp->cmd->request->hisi_req.ci_key_index > 31)) {
-			dev_err(hba->dev, "%s: ci_key index err is 0x%x\n", __func__, lrbp->cmd->request->hisi_req.ci_key_index);
-			BUG();
-		}
-
-		crypto_cci = lrbp->cmd->request->hisi_req.ci_key_index;
-#else
-		crypto_cci = hash_res % MAX_CRYPTO_KEY_INDEX;
-#endif
-
-#else
 		crypto_cci = lrbp->task_tag;
 		spin_lock_irqsave(hba->host->host_lock, flags);
 		ufs_kirin_uie_key_prepare(hba, crypto_cci, lrbp->cmd->request->hisi_req.ci_key);
 		spin_unlock_irqrestore(hba->host->host_lock, flags);
-#endif
 	} else {
 		return;
 	}
@@ -661,11 +451,7 @@ void ufs_kirin_uie_utrd_prepare(struct ufs_hba *hba,
 
 	dword_0 = crypto_enable | crypto_cci;
 	dword_1 = (u32)(dun & 0xffffffff);
-#ifdef CONFIG_SCSI_UFS_ENHANCED_INLINE_CRYPTO
-	dword_3 = (u32)((dun >> 32) | hash_res);
-#else
 	dword_3 = (u32)((dun >> 32) & 0xffffffff);
-#endif
 
 	req_desc->header.dword_0 |= cpu_to_le32(dword_0);
 	req_desc->header.dword_1 = cpu_to_le32(dword_1);
@@ -1443,14 +1229,6 @@ const struct ufs_hba_variant_ops ufs_hba_kirin_vops = {
 static int __init uie_open_session_late(void)
 {
 	int err = 0;
-
-#ifdef CONFIG_SCSI_UFS_ENHANCED_INLINE_CRYPTO_V2
-	err = uie_open_session();
-	if (err) {
-		BUG_ON(1);
-	}
-#endif
-
 	return err;
 }
 

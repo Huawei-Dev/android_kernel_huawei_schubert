@@ -152,7 +152,7 @@ void ufs_soc_init(struct ufs_hba *hba)
 	pr_info("%s --\n", __func__);
 	return;
 }
-#ifndef CONFIG_SCSI_UFS_ENHANCED_INLINE_CRYPTO
+
 /* the func to config key */
 void ufs_kirin_uie_key_prepare(struct ufs_hba *hba, int key_index, void *key)
 {
@@ -202,7 +202,6 @@ void ufs_kirin_uie_key_prepare(struct ufs_hba *hba, int key_index, void *key)
 	if (key_index > 21)
 		ufs_sys_ctrl_writel(host, 0x10000, UFS_APB_ADDR_MASK);
 }
-#endif
 
 #ifdef FEATURE_KIRIN_UFS_PSW
 static int ufs_kirin_wait_ufssys_bitset_timeout(struct ufs_kirin_host *host,

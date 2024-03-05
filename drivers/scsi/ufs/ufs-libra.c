@@ -190,7 +190,6 @@ void ufs_soc_init(struct ufs_hba *hba)
 	return;
 }
 
-#ifndef CONFIG_SCSI_UFS_ENHANCED_INLINE_CRYPTO
 /* the func to config key */
 void ufs_kirin_uie_key_prepare(struct ufs_hba *hba, int key_index, void *key)
 {
@@ -223,7 +222,6 @@ void ufs_kirin_uie_key_prepare(struct ufs_hba *hba, int key_index, void *key)
 	ufshcd_writel(hba, 0x80000108, UFS_REG_CRYPTOCFG_0_16 + (key_index * 0x80));
 	/* key operation end */
 }
-#endif
 
 int ufs_kirin_suspend_before_set_link_state(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 {

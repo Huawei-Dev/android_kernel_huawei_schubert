@@ -303,11 +303,6 @@ enum {
 //#define RPMB_SVC_UFS_TEST		(0xc500bbb0)
 #define RPMB_SVC_UFS_TEST             (0xc600FFF5)
 
-/*use #0~29 key index*/
-#ifdef CONFIG_SCSI_UFS_ENHANCED_INLINE_CRYPTO
-#define MAX_CRYPTO_KEY_INDEX        (30)
-#endif
-
 /* REG UFS_REG_OCPTHRTL definition */
 #define LP_PGE UFS_BIT(16)
 #define LP_AH8_PGE UFS_BIT(17)
@@ -444,9 +439,7 @@ void ufs_kirin_populate_dt(struct device *dev,
 				  struct ufs_kirin_host *host);
 void ufs_kirin_regulator_init(struct ufs_hba *hba);
 void ufs_kirin_inline_crypto_attr(struct ufs_hba *hba);
-#ifndef CONFIG_SCSI_UFS_ENHANCED_INLINE_CRYPTO
 void ufs_kirin_uie_key_prepare(struct ufs_hba *hba, int key_index, void *key);
-#endif
 
 int ufs_kirin_link_startup_pre_change(struct ufs_hba *hba);
 int ufs_kirin_link_startup_post_change(struct ufs_hba *hba);
