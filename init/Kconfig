@@ -1459,14 +1459,6 @@ config HISI_RTG
 	help
 	  set ux related threads into a group.
 
-config HISI_RTG_DEBUG
-	bool "Hisilicon related threads group debug"
-	depends on HISI_RTG
-	depends on HISI_DEBUG_FS
-	default n
-	help
-	  hisi related threads group debugfs.
-
 config HISI_CGROUP_RTG
 	bool "Hisilicon related threads group"
 	depends on HISI_RTG
