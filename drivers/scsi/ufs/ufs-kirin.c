@@ -37,9 +37,6 @@
 #include "ufs-kirin.h"
 #include "ufshci.h"
 #include "dsm_ufs.h"
-#ifdef CONFIG_HISI_UFS_MANUAL_BKOPS
-#include "hisi_ufs_bkops.h"
-#endif
 
 struct st_caps_map {
 	char *caps_name;
@@ -868,75 +865,6 @@ static void ufs_kirin_populate_quirks_dt(struct device_node *np,
 
 }
 
-#ifdef CONFIG_HISI_UFS_MANUAL_BKOPS
-static void ufs_kirin_populate_mgc_dt(struct device_node *parent_np,
-					struct ufs_kirin_host *host)
-{
-	struct device_node *child_np;
-	char *compatible;
-	char *model;
-	char *rev;
-	unsigned int man_id = 0;
-	int ret = 0;
-	int is_white;
-	struct hisi_ufs_bkops_id *bkops_id;
-	struct ufs_hba *hba = host->hba;
-	struct device *dev = hba->dev;
-
-	INIT_LIST_HEAD(&host->hba->bkops_whitelist);
-	INIT_LIST_HEAD(&host->hba->bkops_blacklist);
-
-	for_each_child_of_node(parent_np, child_np) {
-		ret = of_property_read_string(child_np, "compatible", (const char **)(&compatible));
-		if (ret) {
-			pr_err("check the compatible %s\n", child_np->name);
-			continue;
-		} else {
-			if (!strcmp("white", compatible))/*lint !e421*/
-				is_white = 1;
-			else if (!strcmp("black", compatible))/*lint !e421*/
-				is_white = 0;
-			else {
-				pr_err("check the compatible %s\n", child_np->name);
-				continue;
-			}
-		}
-
-		ret = of_property_read_u32(child_np, "manufacturer_id", &man_id);
-		if (ret) {
-			continue;
-		}
-
-		ret = of_property_read_string(child_np, "model", (const char **)(&model));
-		if (ret) {
-			pr_err("check the model %s\n", child_np->name);
-			continue;
-		}
-
-		ret = of_property_read_string(child_np, "rev", (const char **)(&rev));
-		if (ret) {
-			pr_err("check the rev %s\n", child_np->name);
-			continue;
-		}
-
-		bkops_id = devm_kzalloc(dev, sizeof(*bkops_id), GFP_KERNEL);
-		if (!bkops_id) {
-			pr_err("%s %d Failed to alloc bkops_id\n", __func__, __LINE__);
-			return;
-		}
-
-		bkops_id->manufacturer_id = man_id;
-		bkops_id->ufs_model = model;
-		bkops_id->ufs_rev = rev;
-		INIT_LIST_HEAD(&bkops_id->p);
-		if (is_white)
-			list_add(&bkops_id->p, &hba->bkops_whitelist);
-		else
-			list_add(&bkops_id->p, &hba->bkops_blacklist);
-	}
-} /*lint !e429*/
-#endif /* CONFIG_HISI_UFS_MANUAL_BKOPS */
-
 static void ufs_kirin_populate_reset_gpio(
 	struct device_node *np, struct ufs_kirin_host *host)
 {
@@ -963,9 +891,6 @@ void ufs_kirin_populate_dt(struct device *dev,
 	}
 
 	ufs_kirin_populate_caps_dt(np, host);
-#ifdef CONFIG_HISI_UFS_MANUAL_BKOPS
-	ufs_kirin_populate_mgc_dt(np, host);
-#endif
 #ifdef CONFIG_SCSI_UFS_KIRIN_LINERESET_CHECK
 	if (of_find_property(np, "ufs-kirin-linereset-check-disable", NULL))
 		host->hba->bg_task_enable = false;

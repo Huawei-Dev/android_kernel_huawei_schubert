@@ -237,11 +237,6 @@ config HUAWEI_UFS_DSM
        bool "Listen UFS Kernel Error"
        depends on SCSI_UFSHCD
 
-config HISI_UFS_MANUAL_BKOPS
-       bool "hisi manual BKOPS support for UFS"
-       depends on HISI_BK_OPS && SCSI_UFSHCD
-       default n
-
 config HUAWEI_UFS_VENDOR_MODE
        bool "Enter UFS vendor mode"
        depends on SCSI_UFSHCD

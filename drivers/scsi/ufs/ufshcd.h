@@ -59,9 +59,6 @@
 #ifdef CONFIG_SCSI_UFS_HS_ERROR_RECOVER
 #include <linux/wakelock.h>
 #endif
-#ifdef CONFIG_HISI_UFS_MANUAL_BKOPS
-#include <linux/hisi-bkops-core.h>
-#endif
 
 #include <asm/irq.h>
 #include <asm/byteorder.h>
@@ -92,9 +89,6 @@
 #define MAX_HOST_INIT_RETRIES 7
 
 struct ufs_hba;
-#ifdef CONFIG_HISI_UFS_MANUAL_BKOPS
-struct ufs_dev_bkops_ops;
-#endif
 
 /* UFSHCD states */
 enum {
@@ -887,13 +881,6 @@ struct ufs_hba {
 	u8 device_health_info[DESC_HEALTH_INFO_SIZE];
 #endif
 
-#ifdef CONFIG_HISI_UFS_MANUAL_BKOPS
-	bool ufs_bkops_enabled;
-	struct ufs_dev_bkops_ops *ufs_dev_bkops_ops;
-	struct hisi_bkops *ufs_bkops;
-	struct list_head bkops_whitelist;
-	struct list_head bkops_blacklist;
-#endif
 	int reset_retry_max;
 
 	uint32_t last_intr;

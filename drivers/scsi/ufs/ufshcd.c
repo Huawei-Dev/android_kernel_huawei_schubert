@@ -72,9 +72,6 @@
 #ifdef CONFIG_HISI_BOOTDEVICE
 #include "ufs-rpmb.h"
 #endif
-#ifdef CONFIG_HISI_UFS_MANUAL_BKOPS
-#include "hisi_ufs_bkops.h"
-#endif
 
 #define HISI_UFS_BUG_ON(x) 	do {} while(0)
 #define HISI_UFS_BUG() 		do {} while(0)
@@ -4245,9 +4242,6 @@ static int ufshcd_slave_configure(struct scsi_device *sdev)
 
 	blk_queue_update_dma_pad(q, PRDT_DATA_BYTE_COUNT_PAD - 1);
 	blk_queue_max_segment_size(q, PRDT_DATA_BYTE_COUNT_MAX);
-#ifdef CONFIG_HISI_UFS_MANUAL_BKOPS
-	hisi_ufs_manual_bkops_config(sdev);
-#endif
 	return 0;
 }
 
@@ -8718,9 +8712,6 @@ int ufshcd_init(struct ufs_hba *hba, void __iomem *mmio_base, unsigned int irq, 
 	host->max_cmd_len = MAX_CDB_SIZE;
 	host->set_dbd_for_caching = 1;
 
-#ifdef CONFIG_HISI_UFS_MANUAL_BKOPS
-	host->hisi_dev_quirk_flag |= SHOST_HISI_DEV_QUIRK(SHOST_QUIRK_BKOPS_ENABLE);
-#endif
 	hba->autoh8_disable_depth = 1;
 	hba->ahit = UFS_AHIT_AUTOH8_TIMER;
 
