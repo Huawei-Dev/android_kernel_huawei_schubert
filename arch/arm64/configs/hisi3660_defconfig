@@ -4881,7 +4881,6 @@ CONFIG_HISI_LOWMEM_DBG=y
 #
 # Hisi lpm3_debug options
 #
-# CONFIG_HISI_ICS_IPU_PLATFORM is not set
 # CONFIG_GATOR is not set
 # CONFIG_HISI_PMU_DUMP is not set
 # CONFIG_HISI_KERNEL_HARDEN_DEBUG is not set
