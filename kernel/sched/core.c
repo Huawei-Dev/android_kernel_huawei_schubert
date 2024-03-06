@@ -105,101 +105,6 @@
 DEFINE_MUTEX(sched_domains_mutex);
 DEFINE_PER_CPU_SHARED_ALIGNED(struct rq, runqueues);
 
-#ifdef CONFIG_HISI_ED_TASK
-static inline bool is_ed_task(struct rq *rq, struct task_struct *p, u64 wall)
-{
-	if (p->last_wake_wait_sum >= rq->ed_task_waiting_duration)
-		return true;
-
-	if (wall - p->last_wake_ts >= rq->ed_task_running_duration)
-		return true;
-
-	if (is_new_task(p) && wall - p->last_wake_ts >=
-				rq->ed_new_task_running_duration)
-		return true;
-
-	return false;
-}
-
-/*
- * Tasks that are runnable continuously for a period greather than
- * EARLY_DETECTION_DURATION can be flagged early as potential
- * high load tasks.
- */
-bool early_detection_notify(struct rq *rq, u64 wallclock)
-{
-	struct task_struct *p;
-	int loop_max = 10;
-
-	if (!rq->cfs.h_nr_running)
-		return false;
-
-	if (rq->ed_task)
-		return false;
-
-	list_for_each_entry(p, &rq->cfs_tasks, se.group_node) {
-		if (!loop_max)
-			break;
-
-		if (is_ed_task(rq, p, wallclock) && schedtune_prefer_idle(p)) {
-			rq->ed_task = p;
-			sugov_mark_util_change(cpu_of(rq), ADD_ED_TASK);
-			return true;
-		}
-
-		loop_max--;
-	}
-
-	return false;
-}
-
-void clear_ed_task(struct task_struct *p, struct rq *rq)
-{
-	if (p == rq->ed_task) {
-		rq->ed_task = NULL;
-		sugov_mark_util_change(cpu_of(rq), CLEAR_ED_TASK);
-	}
-}
-
-void migrate_ed_task(struct task_struct *p,
-			struct rq *src_rq, struct rq *dest_rq)
-{
-	int src_cpu = cpu_of(src_rq);
-	int dest_cpu = cpu_of(dest_rq);
-
-	if (likely(p != src_rq->ed_task))
-		return;
-
-	src_rq->ed_task = NULL;
-
-#ifdef CONFIG_HISI_ED_TASK_RESET_AT_UPMIGRATION
-	if (capacity_orig_of(src_cpu) < capacity_orig_of(dest_cpu)) {
-		/* For ed task, reset last_wake_ts if task migrate to faster cpu */
-		p->last_wake_ts = walt_ktime_clock();
-		p->last_wake_wait_sum = 0;
-		sugov_mark_util_change(src_cpu, CLEAR_ED_TASK);
-	} else if (capacity_orig_of(src_cpu) > capacity_orig_of(dest_cpu)) {
-#else
-	if (capacity_orig_of(src_cpu) != capacity_orig_of(dest_cpu)) {
-#endif
-		if (!dest_rq->ed_task) {
-			dest_rq->ed_task = p;
-			sugov_mark_util_change(dest_cpu, ADD_ED_TASK);
-		}
-		sugov_mark_util_change(src_cpu, CLEAR_ED_TASK);
-	} else {
-		if (!dest_rq->ed_task)
-			dest_rq->ed_task = p;
-	}
-}
-
-void note_task_waking(struct task_struct *p, u64 wallclock)
-{
-	p->last_wake_wait_sum = 0;
-	p->last_wake_ts = wallclock;
-}
-#endif
-
 static void update_rq_clock_task(struct rq *rq, s64 delta);
 
 void update_rq_clock(struct rq *rq)
@@ -898,11 +803,6 @@ void deactivate_task(struct rq *rq, struct task_struct *p, int flags)
 {
 	if (task_contributes_to_load(p))
 		rq->nr_uninterruptible++;
-
-#ifdef CONFIG_HISI_ED_TASK
-	if (flags & DEQUEUE_SLEEP)
-		clear_ed_task(p, rq);
-#endif
 
 	dequeue_task(rq, p, flags);
 }
@@ -2279,9 +2179,6 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
 		set_task_cpu(p, cpu);
 	}
 
-#ifdef CONFIG_HISI_ED_TASK
-	note_task_waking(p, wallclock);
-#endif
 #endif /* CONFIG_SMP */
 
 	ttwu_queue(p, cpu, wake_flags);
@@ -2344,9 +2241,6 @@ static void try_to_wake_up_local(struct task_struct *p, struct pin_cookie cookie
 		walt_update_task_ravg(rq->curr, rq, TASK_UPDATE, wallclock, 0);
 		walt_update_task_ravg(p, rq, TASK_WAKE, wallclock, 0);
 		ttwu_activate(rq, p, ENQUEUE_WAKEUP);
-#ifdef CONFIG_HISI_ED_TASK
-		note_task_waking(p, wallclock);
-#endif
 	}
 
 	ttwu_do_wakeup(rq, p, 0, cookie);
@@ -2407,9 +2301,6 @@ void sched_exit(struct task_struct *p)
 
 #ifdef CONFIG_SCHED_HISI_TOP_TASK
 	top_task_exit(p, rq);
-#endif
-#ifdef CONFIG_HISI_ED_TASK
-	clear_ed_task(p, rq);
 #endif
 	task_rq_unlock(rq, p, &flags);
 #endif
@@ -3391,9 +3282,6 @@ void scheduler_tick(void)
 	sched_update_rtg_tick(curr);
 	cpu_load_update_active(rq);
 	calc_global_load_tick(rq);
-#ifdef CONFIG_HISI_ED_TASK
-	early_detection_notify(rq, wallclock);
-#endif
 	raw_spin_unlock(&rq->lock);
 
 	perf_event_task_tick();
@@ -8181,12 +8069,6 @@ void __init sched_init(void)
 		rq->top_task_hist_size = DEFAULT_TOP_TASK_HIST_SIZE;
 		rq->top_task_stats_policy = DEFAULT_TOP_TASK_STATS_POLICY;
 		rq->top_task_stats_empty_window = DEFAULT_TOP_TASK_STATS_EMPTY_WINDOW;
-#endif
-
-#ifdef CONFIG_HISI_ED_TASK
-		rq->ed_task_running_duration = EARLY_DETECTION_TASK_RUNNING_DURATION;
-		rq->ed_task_waiting_duration = EARLY_DETECTION_TASK_WAITING_DURATION;
-		rq->ed_new_task_running_duration = EARLY_DETECTION_NEW_TASK_RUNNING_DURATION;
 #endif
 
 		INIT_LIST_HEAD(&rq->cfs_tasks);

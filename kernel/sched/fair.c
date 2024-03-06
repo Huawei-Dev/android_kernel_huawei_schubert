@@ -1122,9 +1122,6 @@ update_stats_wait_end(struct cfs_rq *cfs_rq, struct sched_entity *se)
 
 	if (entity_is_task(se)) {
 		p = task_of(se);
-#ifdef CONFIG_HISI_ED_TASK
-		p->last_wake_wait_sum += delta;
-#endif
 		if (task_on_rq_migrating(p)) {
 			/*
 			 * Preserve migrating task's wait time so wait_start

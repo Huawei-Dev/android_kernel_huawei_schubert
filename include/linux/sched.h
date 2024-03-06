@@ -1869,11 +1869,6 @@ struct task_struct {
 	u32 init_load_pct;
 	u64 last_sleep_ts;
 #endif
-#ifdef CONFIG_HISI_ED_TASK
-	/* cumulative waiting time since last wake */
-	u64 last_wake_wait_sum;
-	u64 last_wake_ts;
-#endif
 
 #ifdef CONFIG_HISI_RTG
 	struct related_thread_group *grp;

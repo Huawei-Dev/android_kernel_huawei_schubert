@@ -403,12 +403,6 @@ static inline void top_task_exit(struct task_struct *p, struct rq *rq) {}
 #define DEFAULT_FREQ_DEC_NOTIFY (200 * 1000)
 #endif
 
-#ifdef CONFIG_HISI_ED_TASK
-#define EARLY_DETECTION_TASK_WAITING_DURATION 11500000
-#define EARLY_DETECTION_TASK_RUNNING_DURATION 120000000
-#define EARLY_DETECTION_NEW_TASK_RUNNING_DURATION 100000000
-#endif
-
 /* CFS-related fields in a runqueue */
 struct cfs_rq {
 	struct load_weight load;
@@ -789,11 +783,6 @@ struct rq {
 	struct sched_cluster *cluster;
 	bool reserved;
 #endif
-#ifdef CONFIG_HISI_ED_TASK
-	unsigned int ed_task_running_duration;
-	unsigned int ed_task_waiting_duration;
-	unsigned int ed_new_task_running_duration;
-#endif /* CONFIG_HISI_ED_TASK */
 #ifdef CONFIG_HISI_MIGRATION_NOTIFY
 	unsigned int freq_inc_notify;
 	unsigned int freq_dec_notify;
@@ -827,9 +816,6 @@ struct rq {
 	raw_spinlock_t walt_update_lock;
 #endif /* CONFIG_SCHED_WALT */
 
-#ifdef CONFIG_HISI_ED_TASK
-	struct task_struct *ed_task;
-#endif
 	u64 group_load;
 
 #ifdef CONFIG_IRQ_TIME_ACCOUNTING

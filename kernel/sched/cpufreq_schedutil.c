@@ -139,11 +139,6 @@ struct sugov_tunables {
 	bool top_task_stats_empty_window;
 #endif
 
-#ifdef CONFIG_HISI_ED_TASK
-	unsigned int ed_task_running_duration;
-	unsigned int ed_task_waiting_duration;
-	unsigned int ed_new_task_running_duration;
-#endif
 #ifdef CONFIG_HISI_MIGRATION_NOTIFY
 	unsigned int freq_inc_notify;
 	unsigned int freq_dec_notify;
@@ -1016,18 +1011,6 @@ void sugov_mark_util_change(int cpu, unsigned int flags)
 		if (sg_policy->tunables->fast_ramp_up)
 			sg_policy->skip_hispeed_logic = true;
 
-#ifdef CONFIG_HISI_ED_TASK
-	if (flags & CLEAR_ED_TASK)
-		sg_policy->skip_min_sample_time = true;
-
-	if (flags & ADD_ED_TASK)
-		sg_policy->skip_hispeed_logic = true;
-#endif
-
-#ifdef CONFIG_SCHED_HISI_TOP_TASK_SKIP_HISPEED_LOGIC
-	if (flags & ADD_TOP_TASK)
-		sg_policy->skip_hispeed_logic = true;
-#endif
 	if (flags & FORCE_UPDATE) {
 		sg_policy->skip_min_sample_time = true;
 		sg_policy->skip_hispeed_logic = true;
@@ -1079,16 +1062,8 @@ static void sugov_work(struct kthread_work *work)
 		rq = cpu_rq(cpu);
 		raw_spin_lock_irq(&rq->lock);
 
-#ifdef CONFIG_HISI_ED_TASK
-		early_detection[i] = (rq->ed_task != NULL);
-		if (early_detection[i])
-			sg_policy->skip_hispeed_logic = true;
-		else
-			walt_update_task_ravg(rq->curr, rq, TASK_UPDATE, walt_ktime_clock(), 0);
-#else
 		early_detection[i] = 0;
 		walt_update_task_ravg(rq->curr, rq, TASK_UPDATE, walt_ktime_clock(), 0);
-#endif
 //		sched_update_group_load(rq);
 
 		raw_spin_unlock_irq(&rq->lock);
@@ -1528,95 +1503,6 @@ static ssize_t top_task_stats_empty_window_store(struct gov_attr_set *attr_set,
 }
 #endif /* CONFIG_SCHED_HISI_TOP_TASK */
 
-#ifdef CONFIG_HISI_ED_TASK
-static ssize_t ed_task_running_duration_show(struct gov_attr_set *attr_set, char *buf)
-{
-	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
-
-	return scnprintf(buf, PAGE_SIZE, "%u\n", tunables->ed_task_running_duration);
-}
-
-static ssize_t ed_task_running_duration_store(struct gov_attr_set *attr_set,
-				      const char *buf, size_t count)
-{
-	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
-	struct sugov_policy *sg_policy;
-	unsigned int val;
-	int cpu;
-
-	if (kstrtouint(buf, 10, &val))
-		return -EINVAL;
-
-	tunables->ed_task_running_duration = val;
-
-	list_for_each_entry(sg_policy, &attr_set->policy_list, tunables_hook) {
-		for_each_cpu(cpu, sg_policy->policy->cpus) {
-			cpu_rq(cpu)->ed_task_running_duration = val;
-		}
-	}
-
-	return count;
-}
-
-static ssize_t ed_task_waiting_duration_show(struct gov_attr_set *attr_set, char *buf)
-{
-	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
-
-	return scnprintf(buf, PAGE_SIZE, "%u\n", tunables->ed_task_waiting_duration);
-}
-
-static ssize_t ed_task_waiting_duration_store(struct gov_attr_set *attr_set,
-				      const char *buf, size_t count)
-{
-	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
-	struct sugov_policy *sg_policy;
-	unsigned int val;
-	int cpu;
-
-	if (kstrtouint(buf, 10, &val))
-		return -EINVAL;
-
-	tunables->ed_task_waiting_duration = val;
-
-	list_for_each_entry(sg_policy, &attr_set->policy_list, tunables_hook) {
-		for_each_cpu(cpu, sg_policy->policy->cpus) {
-			cpu_rq(cpu)->ed_task_waiting_duration = val;
-		}
-	}
-
-	return count;
-}
-
-static ssize_t ed_new_task_running_duration_show(struct gov_attr_set *attr_set, char *buf)
-{
-	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
-
-	return scnprintf(buf, PAGE_SIZE, "%u\n", tunables->ed_new_task_running_duration);
-}
-
-static ssize_t ed_new_task_running_duration_store(struct gov_attr_set *attr_set,
-				      const char *buf, size_t count)
-{
-	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
-	struct sugov_policy *sg_policy;
-	unsigned int val;
-	int cpu;
-
-	if (kstrtouint(buf, 10, &val))
-		return -EINVAL;
-
-	tunables->ed_new_task_running_duration = val;
-
-	list_for_each_entry(sg_policy, &attr_set->policy_list, tunables_hook) {
-		for_each_cpu(cpu, sg_policy->policy->cpus) {
-			cpu_rq(cpu)->ed_new_task_running_duration = val;
-		}
-	}
-
-	return count;
-}
-#endif /* CONFIG_HISI_ED_TASK */
-
 static unsigned int *get_tokenized_data(const char *buf, int *num_tokens)
 {
 	const char *cp;
@@ -1896,11 +1782,6 @@ static struct governor_attr top_task_hist_size = __ATTR_RW(top_task_hist_size);
 static struct governor_attr top_task_stats_policy = __ATTR_RW(top_task_stats_policy);
 static struct governor_attr top_task_stats_empty_window = __ATTR_RW(top_task_stats_empty_window);
 #endif
-#ifdef CONFIG_HISI_ED_TASK
-static struct governor_attr ed_task_running_duration = __ATTR_RW(ed_task_running_duration);
-static struct governor_attr ed_task_waiting_duration = __ATTR_RW(ed_task_waiting_duration);
-static struct governor_attr ed_new_task_running_duration = __ATTR_RW(ed_new_task_running_duration);
-#endif
 #ifdef CONFIG_HISI_MIGRATION_NOTIFY
 static struct governor_attr freq_inc_notify = __ATTR_RW(freq_inc_notify);
 static struct governor_attr freq_dec_notify = __ATTR_RW(freq_dec_notify);
@@ -1929,11 +1810,6 @@ static struct attribute *sugov_attributes[] = {
 	&top_task_stats_policy.attr,
 	&top_task_stats_empty_window.attr,
 #endif
-#ifdef CONFIG_HISI_ED_TASK
-	&ed_task_running_duration.attr,
-	&ed_task_waiting_duration.attr,
-	&ed_new_task_running_duration.attr,
-#endif
 #ifdef CONFIG_HISI_MIGRATION_NOTIFY
 	&freq_inc_notify.attr,
 	&freq_dec_notify.attr,
@@ -1959,11 +1835,6 @@ static struct governor_user_attr schedutil_user_attrs[] = {
 	{.name = "top_task_hist_size", .uid = SYSTEM_UID, .gid = SYSTEM_GID, .mode = 0660},
 	{.name = "top_task_stats_policy", .uid = SYSTEM_UID, .gid = SYSTEM_GID, .mode = 0660},
 	{.name = "top_task_stats_empty_window", .uid = SYSTEM_UID, .gid = SYSTEM_GID, .mode = 0660},
-#endif
-#ifdef CONFIG_HISI_ED_TASK
-	{.name = "ed_task_running_duration", .uid = SYSTEM_UID, .gid = SYSTEM_GID, .mode = 0660},
-	{.name = "ed_task_waiting_duration", .uid = SYSTEM_UID, .gid = SYSTEM_GID, .mode = 0660},
-	{.name = "ed_new_task_running_duration", .uid = SYSTEM_UID, .gid = SYSTEM_GID, .mode = 0660},
 #endif
 #ifdef CONFIG_HISI_MIGRATION_NOTIFY
 	{.name = "freq_inc_notify", .uid = SYSTEM_UID, .gid = SYSTEM_GID, .mode = 0660},
@@ -2142,11 +2013,6 @@ static int sugov_init(struct cpufreq_policy *policy)
 	spin_lock_init(&tunables->target_loads_lock);
 	spin_lock_init(&tunables->above_hispeed_delay_lock);
 	spin_lock_init(&tunables->min_sample_time_lock);
-#endif
-#ifdef CONFIG_HISI_ED_TASK
-	tunables->ed_task_running_duration = EARLY_DETECTION_TASK_RUNNING_DURATION;
-	tunables->ed_task_waiting_duration = EARLY_DETECTION_TASK_WAITING_DURATION;
-	tunables->ed_new_task_running_duration = EARLY_DETECTION_NEW_TASK_RUNNING_DURATION;
 #endif
 #ifdef CONFIG_HISI_MIGRATION_NOTIFY
 	tunables->freq_inc_notify = DEFAULT_FREQ_INC_NOTIFY;
