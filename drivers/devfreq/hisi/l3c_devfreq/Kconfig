@@ -5,13 +5,6 @@ config HISI_L3C_DEVFREQ
 	    help
 			This enables the hisilicon l3c devfreq driver.
 
-config HISI_HW_VOTE_L3C_FREQ
-		bool "Enable hardware vote l3c dvfs feature"
-		depends on HISI_L3C_DEVFREQ && HISI_HW_VOTE
-		default n
-		help
-		  enable hardware vote l3c dvfs feature
-
 config HISI_CPUFREQ_LINK_L3CACHE
 		bool "Enable CPUFREQ LINK L3CACHE feature"
 		depends on HISI_L3C_DEVFREQ

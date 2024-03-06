@@ -28,13 +28,6 @@
 #include <linux/hisi/rdr_hisi_platform.h>
 #include <linux/power/hisi/coul/hisi_coul_drv.h>
 
-#ifdef CONFIG_HISI_HW_VOTE
-#include <linux/hisi/hisi_hw_vote.h>
-
-static struct hvdev *limit_bigfreq_hvdev = NULL;
-static struct hvdev *limit_gpufreq_hvdev = NULL;
-#endif
-
 extern void enable_irq(unsigned int irq);
 extern void disable_irq_nosync(unsigned int irq);
 
@@ -149,15 +142,6 @@ static void hisi_6423_vbatt_check(struct work_struct *work)
 	pr_err("battery_check_count: %d, battery voltage = %d\n", battery_check_count, vbatt);
 	if (vbatt > vbatt_limit){
 		pr_err("Battery voltage over %d mV\n", vbatt_limit);
-#ifdef CONFIG_HISI_HW_VOTE
-		ret = hisi_hv_set_freq(limit_bigfreq_hvdev, 0xFFFFFFFF);
-		if (!ret)
-			pr_err("big cluster returns to normal frequency\n");
-
-		ret = hisi_hv_set_freq(limit_gpufreq_hvdev, 0xFFFFFFFF);
-		if (!ret)
-			pr_err("gpu returns to normal frequency\n");
-#endif
 		/*clear interrupt status*/
 		val = hisi_subpmic_read(subpmic, subpmic->irq_addr);
 		val = val | 0x10;
@@ -198,16 +182,6 @@ static irqreturn_t hisi_6423_irq_handler(int irq, void *data)
 		/*interrupt mask*/
 		disable_irq_nosync(subpmic->irq);
 		pr_err("6423-pmic interrupts under voltage\n");
-#ifdef CONFIG_HISI_HW_VOTE
-		/*vote freq*/
-		ret = hisi_hv_set_freq(limit_bigfreq_hvdev, 0);
-		if (!ret)
-			pr_err("big cluster votes to lowest frequency\n");
-
-		ret = hisi_hv_set_freq(limit_gpufreq_hvdev, 0);
-		if (!ret)
-			pr_err("gpu votes to lowest frequency\n");
-#endif
 		/*delayed work: check battery voltage*/
 		schedule_delayed_work(&subpmic->check_6423_vbatt_work, 0);
 	} else {
@@ -216,52 +190,6 @@ static irqreturn_t hisi_6423_irq_handler(int irq, void *data)
 	}
 	return IRQ_HANDLED;/*lint !e454*/
 }
-
-#ifdef CONFIG_HISI_HW_VOTE
-void hisi_cluster_freq_limit_init(struct device *dev)
-{
-	struct device_node *np = dev->of_node;
-	const char *ch_name;
-	const char *vsrc;
-	int ret;
-
-	ret = of_property_read_string_index(np, "bigfreq-limit-channel", 0, &ch_name);
-	if (ret) {
-		dev_err(dev, "[%s]:parse channel name fail!\n", __func__);
-		goto gpu_limit_init;
-	}
-
-	ret = of_property_read_string_index(np, "bigfreq-limit-channel", 1, &vsrc);
-	if (ret) {
-		dev_err(dev, "[%s]:parse vote src fail!\n", __func__);
-		goto gpu_limit_init;
-	}
-	limit_bigfreq_hvdev = hisi_hvdev_register(dev, ch_name, vsrc);
-	if (IS_ERR_OR_NULL(limit_bigfreq_hvdev)) {
-		dev_err(dev, "[%s]: bigfreq limit vote register fail!\n", __func__);
-	}
-
-gpu_limit_init:
-	ret = of_property_read_string_index(np, "gpufreq-limit-channel", 0, &ch_name);
-	if (ret) {
-		dev_err(dev, "[%s]:parse channel name fail!\n", __func__);
-		goto out;
-	}
-	ret = of_property_read_string_index(np, "gpufreq-limit-channel", 1, &vsrc);
-	if (ret) {
-		dev_err(dev, "[%s]:parse vote src fail!\n", __func__);
-		goto out;
-	}
-
-	limit_gpufreq_hvdev = hisi_hvdev_register(dev, ch_name, vsrc);
-	if (IS_ERR_OR_NULL(limit_gpufreq_hvdev)) {
-		dev_err(dev, "[%s]: gpufreq limit vote register fail!\n", __func__);
-	}
-
-out:
-	return;
-}
-#endif
 
 static int hisi_6423_pmic_probe(struct spmi_device *pdev)
 {
@@ -337,10 +265,6 @@ static int hisi_6423_pmic_probe(struct spmi_device *pdev)
 	pr_err("PMU_6423 IRQ_MASK address value:irq[0x%x] = 0x%x\n", subpmic->irq_mask_addr, val);
 	val = val & 0xef;
 	hisi_subpmic_write(subpmic, subpmic->irq_mask_addr , val);
-
-#ifdef CONFIG_HISI_HW_VOTE
-	hisi_cluster_freq_limit_init(dev);
-#endif
 
 	INIT_DELAYED_WORK(&subpmic->check_6423_vbatt_work, hisi_6423_vbatt_check);
 	wake_lock_init(&vbatt_check_lock, WAKE_LOCK_SUSPEND, "6423_vbatt_check_wake");

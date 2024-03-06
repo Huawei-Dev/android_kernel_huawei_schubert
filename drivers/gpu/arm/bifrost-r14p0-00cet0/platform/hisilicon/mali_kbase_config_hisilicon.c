@@ -38,10 +38,6 @@
 #include <linux/hisi/hisi_devfreq.h>
 #endif
 
-#ifdef CONFIG_HISI_HW_VOTE_GPU_FREQ
-#include <linux/hisi/hisi_hw_vote.h>
-#endif
-
 #include <linux/pm_runtime.h>
 #include <linux/clk.h>
 #include <linux/regulator/consumer.h>
@@ -98,13 +94,7 @@ static struct kbase_io_resources io_resources = {
 static struct kbase_device *kbase_dev = NULL;
 #endif
 
-
 #define KHz	(1000)
-#ifdef CONFIG_HISI_HW_VOTE_GPU_FREQ
-static struct hvdev *gpu_hvdev = NULL;
-#endif
-
-
 
 static int kbase_set_hi_features_mask(struct kbase_device *kbdev)
 {
@@ -284,11 +274,7 @@ static int mali_kbase_devfreq_target(struct device *dev, unsigned long *_freq,
 
 	trace_clock_set_rate("clk-g3d",freq,raw_smp_processor_id());
 
-#ifdef CONFIG_HISI_HW_VOTE_GPU_FREQ
-	if (hisi_hv_set_freq(gpu_hvdev, freq / KHz)) {
-#else
 	if (clk_set_rate((kbdev->clk), freq)) {
-#endif
 		pr_err("[mali]  Failed to set gpu freqency, [%lu->%lu]\n", old_freq, freq);
 		return -ENODEV;
 	}
@@ -369,9 +355,6 @@ static int mali_kbase_get_dev_status(struct device *dev,
 {
 	struct hisi_devfreq_data *priv_data = &hisi_devfreq_priv_data;
 	struct kbase_device *kbdev = (struct kbase_device *)dev->platform_data;
-#ifdef CONFIG_HISI_HW_VOTE_GPU_FREQ
-	u32 freq = 0;
-#endif
 
 	if (kbdev->pm.backend.metrics.kbdev != kbdev) {
 		pr_err("%s pm backend metrics not initialized\n", __func__);
@@ -381,12 +364,7 @@ static int mali_kbase_get_dev_status(struct device *dev,
 	(void)kbase_pm_get_dvfs_action(kbdev);
 	stat->busy_time = kbdev->pm.backend.metrics.utilisation;
 	stat->total_time = 100;
-#ifdef CONFIG_HISI_HW_VOTE_GPU_FREQ
-	hisi_hv_get_last(gpu_hvdev, &freq);
-	stat->current_frequency = (unsigned long)freq * KHz;
-#else
 	stat->current_frequency = clk_get_rate(kbdev->clk);
-#endif
 	priv_data->vsync_hit = kbdev->pm.backend.metrics.vsync_hit;
 	priv_data->cl_boost = kbdev->pm.backend.metrics.cl_boost;
 	stat->private_data = (void *)priv_data;
@@ -717,34 +695,7 @@ static inline void hisi_gpu_devfreq_cooling_init(struct kbase_device *kbdev){(vo
 #ifdef CONFIG_PM_DEVFREQ
 void hisi_gpu_devfreq_initial_freq(struct kbase_device *kbdev)
 {
-#ifdef CONFIG_HISI_HW_VOTE_GPU_FREQ
-	u32 freq = 0;
-	unsigned long freq_hz;
-	struct dev_pm_opp *opp;
-	struct device *dev = kbdev->dev;
-
-	gpu_hvdev = hisi_hvdev_register(dev, "gpu-freq", "vote-src-1");
-	if (!gpu_hvdev) {
-		pr_err("[%s] register hvdev fail!\n", __func__);
-	}
-
-	hisi_hv_get_last(gpu_hvdev, &freq);
-	freq_hz = (unsigned long)freq * KHz;
-
-	gpu_devfreq_rcu_read_lock();
-	opp = dev_pm_opp_find_freq_ceil(dev, &freq_hz);
-	if (IS_ERR(opp)) {
-		freq_hz = mali_kbase_devfreq_profile.freq_table[0];
-	}
-	gpu_devfreq_opp_put(opp);
-	gpu_devfreq_rcu_read_unlock();
-
-	/*update last freq in hv driver*/
-	hisi_hv_set_freq(gpu_hvdev, freq_hz/KHz);
-	mali_kbase_devfreq_profile.initial_freq = freq_hz;
-#else
 	mali_kbase_devfreq_profile.initial_freq = clk_get_rate(kbdev->clk);
-#endif
 }
 
 void hisi_gpu_devfreq_init(struct kbase_device *kbdev)

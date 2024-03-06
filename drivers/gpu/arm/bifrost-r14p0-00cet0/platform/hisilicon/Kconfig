@@ -40,13 +40,6 @@ config MALI_GPU_DRM_HI3660
 	help
 	  enable mali gpu drm feature
 
-config HISI_HW_VOTE_GPU_FREQ
-	bool "Enable hardware vote gpu freq feature"
-	depends on PM_DEVFREQ && HISI_HW_VOTE
-	default n
-	help
-	  enable hardware vote gpu freq feature
-
 config HISI_GPU_CORESWITCH
 	bool "Enable core switch feature in gpu low frequency"
 	depends on MALI_MIDGARD && MALI_EXPERT

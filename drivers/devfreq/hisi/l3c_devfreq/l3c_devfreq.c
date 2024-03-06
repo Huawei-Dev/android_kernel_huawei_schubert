@@ -18,13 +18,8 @@
 #include <linux/hisi/hisi_devfreq.h>
 #include <trace/events/power.h>
 
-#ifdef CONFIG_HISI_HW_VOTE_L3C_FREQ
-#include <linux/hisi/hisi_hw_vote.h>
-#endif
-
 #define CREATE_TRACE_POINTS
 #include <trace/events/l3c_devfreq.h>
-
 
 #define L3C_DEVFREQ_PLATFORM_DEVICE_NAME			"l3c_devfreq"
 #define L3C_DEVFREQ_GOVERNOR_NAME					"l3c_governor"
@@ -89,9 +84,6 @@ struct l3c_devfreq {
 	struct devfreq *devfreq;
 	struct platform_device *pdev;
 	struct devfreq_dev_profile *devfreq_profile;
-#ifdef CONFIG_HISI_HW_VOTE_L3C_FREQ
-	struct hvdev *l3c_hvdev;
-#endif
 	u32 polling_ms;
 	unsigned long initial_freq;
 	u32 hv_supported;
@@ -168,36 +160,9 @@ static int l3c_devfreq_set_target_freq_ipc(struct device *dev,
 	return 0;
 }
 
-#ifdef CONFIG_HISI_HW_VOTE_L3C_FREQ
-static int l3c_devfreq_set_target_freq_hv(struct device *dev,
-					 unsigned long freq)
-{
-	struct l3c_devfreq *l3c = dev_get_drvdata(dev);
-	int ret = 0;
-
-	ret = hisi_hv_set_freq(l3c->l3c_hvdev, (freq/FREQ_KHZ));
-	if(ret) {
-		dev_err(dev, "failed to set freq by hw vote\n");
-		return -1;
-	}
-
-	return 0;
-}
-#endif
-
 static int l3c_devfreq_set_target_freq(struct device *dev, unsigned long freq)
 {
-	struct l3c_devfreq *l3c = dev_get_drvdata(dev);
-
-#ifdef CONFIG_HISI_HW_VOTE_L3C_FREQ
-	if(l3c->hv_supported){
-		return l3c_devfreq_set_target_freq_hv(dev, freq);
-	}else{
-		return l3c_devfreq_set_target_freq_ipc(dev, freq);
-	}
-#else
 	return l3c_devfreq_set_target_freq_ipc(dev, freq);
-#endif
 }
 
 
@@ -1393,20 +1358,6 @@ static int l3c_devfreq_probe(struct platform_device *pdev)
 		goto err_unsetup;
 	}
 
-/*lint -e613 */
-#ifdef CONFIG_HISI_HW_VOTE_L3C_FREQ
-	if(l3c->hv_supported){
-		l3c->l3c_hvdev = hisi_hvdev_register(&pdev->dev, "l3-freq", "vote-src-1");
-		if (IS_ERR_OR_NULL(l3c->l3c_hvdev)) {
-			dev_err(&pdev->dev, "register hvdev fail!\n");
-			ret = -ENODEV;
-			goto err_unsetup;
-		}
-	}else{
-		l3c->l3c_hvdev = NULL;
-	}
-#endif
-
 #ifdef CONFIG_HISI_CPUFREQ_LINK_L3CACHE
 	l3c->l3c_trans_notify.notifier_call = l3c_cpufreq_transition;
 	ret = cpufreq_register_notifier(&l3c->l3c_trans_notify, CPUFREQ_TRANSITION_NOTIFIER);
@@ -1433,9 +1384,6 @@ err_unreg_trans:
 #ifdef CONFIG_HISI_CPUFREQ_LINK_L3CACHE
 	cpufreq_unregister_notifier(&l3c->l3c_trans_notify, CPUFREQ_TRANSITION_NOTIFIER);
 err_hvdev:
-#endif
-#ifdef CONFIG_HISI_HW_VOTE_L3C_FREQ
-       hisi_hvdev_remove(l3c->l3c_hvdev);
 #endif
 err_unsetup:
 	l3c_devfreq_unsetup(pdev);

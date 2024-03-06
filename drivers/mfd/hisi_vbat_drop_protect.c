@@ -19,21 +19,11 @@
 #include <linux/jiffies.h>
 #include <linux/power/hisi/coul/hisi_coul_drv.h>
 
-#ifdef CONFIG_HISI_HW_VOTE
-#include <linux/hisi/hisi_hw_vote.h>
-
-static struct hvdev *limit_bigfreq_hvdev    = NULL;
-static struct hvdev *limit_middlefreq_hvdev = NULL;
-static struct hvdev *limit_gpufreq_hvdev    = NULL;
-#endif
-
 #ifndef STATIC
 #define STATIC static
 #endif
 
-
 #ifdef VBAT_DROP_TEST
-
 /*1:auto 2 div*/
 static void hisi_vbat_drop_print_auto_div_state(struct hisi_vbat_drop_protect_dev *di)
 {
@@ -47,134 +37,6 @@ static void hisi_vbat_drop_print_auto_div_state(struct hisi_vbat_drop_protect_de
                          (unsigned int)(readl(L3_VOL_DROP_EN_STAT_ADDR(di->pmctrl_base))     & L3_VOL_DROP_EN_STAT_BIT),
                          (unsigned int)(readl(GPU_VOL_DROP_EN_STAT_ADDR(di->pmctrl_base))    & GPU_VOL_DROP_EN_STAT_BIT));
 }
-#endif
-
-#ifdef CONFIG_HISI_HW_VOTE
-/********************************************************************
-  Function:        hisi_cluster_freq_limit_init
-  Description:     freq limt init
-  Input:           struct device *dev   ---- vbat drop protect device
-  Output:          NULL
-  Return:          NULL
-  Remart:          get freq core from dts and register to hvdev
-**********************************************************************/
-static void hisi_vbat_drop_cluster_freq_limit_init(struct device *dev)
-{
-	struct device_node *np;
-	const char *ch_name = NULL;
-	const char *vsrc = NULL;
-	int ret;
-
-    if (!dev)
-        return;
-
-    np = dev->of_node;
-
-    /*get big cpu fre from dts and register to hvdev*/
-	ret = of_property_read_string_index(np, "bigfreq-limit-channel", 0, &ch_name);
-	if (ret) {
-		dev_err(dev, "[%s]:parse big cpu channel name fail,not channel!\n", __func__);
-		goto middle_limit_init;
-	}
-
-	ret = of_property_read_string_index(np, "bigfreq-limit-channel", 1, &vsrc);
-	if (ret) {
-		dev_err(dev, "[%s]:parse big cpu  vote src fail!\n", __func__);
-		goto middle_limit_init;
-	}
-	limit_bigfreq_hvdev = hisi_hvdev_register(dev, ch_name, vsrc);
-	if (IS_ERR_OR_NULL(limit_bigfreq_hvdev)) {
-		dev_err(dev, "[%s]: bigfreq limit vote register fail!\n", __func__);
-	}
-
-    /*get middle cpu fre from dts and register to hvdev*/
-middle_limit_init:
-	ret = of_property_read_string_index(np, "middlefreq-limit-channel", 0, &ch_name);
-	if (ret) {
-		dev_err(dev, "[%s]:parse middle cpu channel name fail,not channel!\n", __func__);
-		goto gpu_limit_init;
-	}
-
-	ret = of_property_read_string_index(np, "middlefreq-limit-channel", 1, &vsrc);
-	if (ret) {
-		dev_err(dev, "[%s]:parse middle cpu vote src fail!\n", __func__);
-		goto gpu_limit_init;
-	}
-	limit_middlefreq_hvdev = hisi_hvdev_register(dev, ch_name, vsrc);
-	if (IS_ERR_OR_NULL(limit_middlefreq_hvdev)) {
-		dev_err(dev, "[%s]: middlefreq limit vote register fail!\n", __func__);
-	}
-     /*get gpu fre from dts and register to hvdev*/
-gpu_limit_init:
-	ret = of_property_read_string_index(np, "gpufreq-limit-channel", 0, &ch_name);
-	if (ret) {
-		dev_err(dev, "[%s]:parse gpu channel name fail, not channel!\n", __func__);
-		goto out;
-	}
-
-	ret = of_property_read_string_index(np, "gpufreq-limit-channel", 1, &vsrc);
-	if (ret) {
-		dev_err(dev, "[%s]:parse gpu vote src fail!\n", __func__);
-		goto out;
-	}
-
-	limit_gpufreq_hvdev = hisi_hvdev_register(dev, ch_name, vsrc);
-	if (IS_ERR_OR_NULL(limit_gpufreq_hvdev)) {
-		dev_err(dev, "[%s]: gpufreq limit vote register fail!\n", __func__);
-	}
-
-out:
-	return;
-}
-
-
-/********************************************************************
-  Function:        hisi_vbat_drop_cluster_freq_set
-  Description:     set core freq
-  Input:           enum vbat_drop_freq  freq_type ---- core freq.
-  Output:          NULL
-  Return:          NULL
-  Remart:          set core freq to min or normal.
-**********************************************************************/
-
-STATIC void hisi_vbat_drop_cluster_freq_set(enum vbat_drop_freq freq_type)
-{
-    int ret;
-
-    /*vote big cpu middle cpu and gpu to lowest freq*/
-    pr_err("[%s]freq type [%d]\n", __func__, freq_type);
-
-    if (MIN_FREQ == freq_type) {
-        ret = hisi_hv_set_freq(limit_bigfreq_hvdev, 0);
-        if (!ret)
-            pr_err("[%s]big cluster votes to lowest frequency\n", __func__);
-
-        ret = hisi_hv_set_freq(limit_middlefreq_hvdev, 0);
-        if (!ret)
-            pr_err("[%s]middle cluster votes to lowest frequency\n", __func__);
-
-        ret = hisi_hv_set_freq(limit_gpufreq_hvdev, 0);
-        if (!ret)
-            pr_err("[%s]gpu votes to lowest frequency\n", __func__);
-
-    } else if (RESTOR_FREQ == freq_type) {
-      /*vote big cpu middle cpu and gpu to restore normal freq*/
-		ret = hisi_hv_set_freq(limit_bigfreq_hvdev, 0xFFFFFFFF);
-		if (!ret)
-			pr_err("[%s]big cluster returns to normal frequency\n",__func__);
-
-		ret = hisi_hv_set_freq(limit_middlefreq_hvdev, 0xFFFFFFFF);
-		if (!ret)
-			pr_err("[%s]middle cluster returns to normal frequency\n", __func__);
-
-		ret = hisi_hv_set_freq(limit_gpufreq_hvdev, 0xFFFFFFFF);
-		if (!ret)
-			pr_err("[%s]gpu returns to normal frequency\n", __func__);
-
-    } else
-        ;
-}
-
 #endif
 
 /********************************************************************
@@ -206,9 +68,6 @@ static void hisi_vbat_drop_interrupt_work(struct work_struct *work)
 
         /* Try a few times*/
         if (bat_vol_normal_cnt > VBAT_DROP_VOL_NORMAL_CNT ) {
-        #ifdef CONFIG_HISI_HW_VOTE
-            hisi_vbat_drop_cluster_freq_set(RESTOR_FREQ);
-        #endif
 		    /*clear interrupt status and cancel auto 2 div*/
             HISI_VBAT_DROP_PMIC_REG_WRITE(PMIC_VSYS_DROP_IRQ_REG, PMIC_VSYS_DROP_IRQ_CLEAR);
 		    enable_irq(di->vbat_drop_irq);
@@ -249,9 +108,6 @@ static irqreturn_t hisi_vbat_drop_irq_handler(int irq, void *data)
     /*printf auto div register state*/
 #ifdef VBAT_DROP_TEST
     hisi_vbat_drop_print_auto_div_state(di);
-#endif
-#ifdef CONFIG_HISI_HW_VOTE
-    hisi_vbat_drop_cluster_freq_set(MIN_FREQ);
 #endif
 	/*delayed work: check battery voltage*/
 	queue_delayed_work(system_power_efficient_wq, &di->vbat_drop_irq_work, msecs_to_jiffies(0));
@@ -509,9 +365,6 @@ static int hisi_vbat_drop_protect_probe(struct platform_device *pdev)
 
     wake_lock_init(&di->vbatt_check_lock, WAKE_LOCK_SUSPEND, "vbatt_drop_check_wake");
 
-#ifdef CONFIG_HISI_HW_VOTE
-	hisi_vbat_drop_cluster_freq_limit_init(dev);
-#endif
     /*set vbat drop vol*/
     hisi_vbat_drop_vol_set(di->vbat_drop_vol_mv);
 

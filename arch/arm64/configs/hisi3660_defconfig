@@ -4722,11 +4722,6 @@ CONFIG_PM_SEC_IO=y
 CONFIG_HISI_OCBC=y
 
 #
-# Hisi HW Vote options
-#
-# CONFIG_HISI_HW_VOTE is not set
-
-#
 # HISI GPUFREQ Options
 #
 CONFIG_HISI_GPUFREQ=y

@@ -28,18 +28,12 @@
 #include <linux/hisi/hifreq_hotplug.h>
 
 #include "cpufreq-dt.h"
-#ifdef CONFIG_HISI_HW_VOTE_CPU_FREQ
-#include <linux/hisi/hisi_hw_vote.h>
-#endif
 
 struct private_data {
 	struct opp_table *opp_table;
 	struct device *cpu_dev;
 	struct thermal_cooling_device *cdev;
 	const char *reg_name;
-#ifdef CONFIG_HISI_HW_VOTE_CPU_FREQ
-	struct hvdev *cpu_hvdev;
-#endif
 };
 
 static struct freq_attr *cpufreq_dt_attr[] = {
@@ -48,9 +42,6 @@ static struct freq_attr *cpufreq_dt_attr[] = {
 	NULL,
 };
 
-#ifdef CONFIG_HISI_L2_DYNAMIC_RETENTION
-extern void l2_dynamic_retention_ctrl(struct cpufreq_policy *policy, unsigned int freq);
-#endif
 static int set_target(struct cpufreq_policy *policy, unsigned int index)
 {
 	struct private_data *priv = policy->driver_data;
@@ -58,16 +49,6 @@ static int set_target(struct cpufreq_policy *policy, unsigned int index)
 #ifdef CONFIG_HISI_BIG_MAXFREQ_HOTPLUG
 	if (hifreq_hotplug_is_enabled())
 		return bL_hifreq_hotplug_set_target(policy, priv->cpu_dev, policy->freq_table[index].frequency);
-#endif
-
-#ifdef CONFIG_HISI_HW_VOTE_CPU_FREQ
-#ifdef CONFIG_HISI_L2_DYNAMIC_RETENTION
-	l2_dynamic_retention_ctrl(policy, policy->freq_table[index].frequency);
-#endif
-	return hisi_cpufreq_set(priv->cpu_hvdev, policy->freq_table[index].frequency);
-#else
-	return dev_pm_opp_set_rate(priv->cpu_dev,
-				   policy->freq_table[index].frequency * 1000);
 #endif
 }
 
@@ -278,9 +259,6 @@ static int cpufreq_init(struct cpufreq_policy *policy)
 		goto out_free_priv;
 	}
 
-#ifdef CONFIG_HISI_HW_VOTE_CPU_FREQ
-	priv->cpu_hvdev = hisi_cpufreq_hv_init(cpu_dev);
-#endif
 	priv->cpu_dev = cpu_dev;
 	policy->driver_data = priv;
 	policy->clk = cpu_clk;
@@ -316,10 +294,6 @@ static int cpufreq_init(struct cpufreq_policy *policy)
 
 	policy->cpuinfo.transition_latency = transition_latency;
 
-#ifdef CONFIG_HISI_HW_VOTE_CPU_FREQ
-	hisi_cpufreq_policy_cur_init(priv->cpu_hvdev, policy);
-#endif
-
 	return 0;
 
 out_free_cpufreq_table:
@@ -340,10 +314,6 @@ static int cpufreq_exit(struct cpufreq_policy *policy)
 {
 	struct private_data *priv = policy->driver_data;
 
-#ifdef CONFIG_HISI_HW_VOTE_CPU_FREQ
-	hisi_cpufreq_hv_exit(priv->cpu_hvdev, policy->cpu);
-	priv->cpu_hvdev = NULL;
-#endif
 	cpufreq_cooling_unregister(priv->cdev);
 	dev_pm_opp_free_cpufreq_table(priv->cpu_dev, &policy->freq_table);
 	dev_pm_opp_of_cpumask_remove_table(policy->related_cpus);
@@ -398,11 +368,7 @@ static struct cpufreq_driver dt_cpufreq_driver = {
 	.flags = CPUFREQ_STICKY | CPUFREQ_NEED_INITIAL_FREQ_CHECK,
 	.verify = cpufreq_generic_frequency_table_verify,
 	.target_index = set_target,
-#ifdef CONFIG_HISI_HW_VOTE_CPU_FREQ
-	.get = hisi_cpufreq_get,
-#else
 	.get = cpufreq_generic_get,
-#endif
 	.init = cpufreq_init,
 	.exit = cpufreq_exit,
 	.ready = cpufreq_ready,
