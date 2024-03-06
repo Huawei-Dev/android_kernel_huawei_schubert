@@ -4882,7 +4882,6 @@ CONFIG_HISI_LOWMEM_DBG=y
 #
 # CONFIG_GATOR is not set
 CONFIG_HISI_SECS_CTRL=y
-# CONFIG_SECURE_TEST is not set
 
 #
 # Huawei Platform Drivers
