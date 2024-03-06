@@ -398,11 +398,6 @@ static inline unsigned long top_task_util(struct rq *rq) { return 0; }
 static inline void top_task_exit(struct task_struct *p, struct rq *rq) {}
 #endif /* CONFIG_SCHED_HISI_TOP_TASK */
 
-#ifdef CONFIG_HISI_MIGRATION_NOTIFY
-#define DEFAULT_FREQ_INC_NOTIFY (200 * 1000)
-#define DEFAULT_FREQ_DEC_NOTIFY (200 * 1000)
-#endif
-
 /* CFS-related fields in a runqueue */
 struct cfs_rq {
 	struct load_weight load;
@@ -782,10 +777,6 @@ struct rq {
 #ifdef CONFIG_HISI_EAS_SCHED
 	struct sched_cluster *cluster;
 	bool reserved;
-#endif
-#ifdef CONFIG_HISI_MIGRATION_NOTIFY
-	unsigned int freq_inc_notify;
-	unsigned int freq_dec_notify;
 #endif
 
 #ifdef CONFIG_SCHED_WALT

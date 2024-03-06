@@ -8043,10 +8043,6 @@ void __init sched_init(void)
 		rwlock_init(&per_cpu(update_util_data_lock, i));
 #endif
 
-#ifdef CONFIG_HISI_MIGRATION_NOTIFY
-		rq->freq_inc_notify = DEFAULT_FREQ_INC_NOTIFY;
-		rq->freq_dec_notify = DEFAULT_FREQ_DEC_NOTIFY;
-#endif
 #ifdef CONFIG_SCHED_WALT
 		cpumask_set_cpu(i, &rq->freq_domain_cpumask);
 		raw_spin_lock_init(&rq->walt_update_lock);

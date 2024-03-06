@@ -1295,32 +1295,6 @@ migrate_cpu_busy_time(struct task_struct *p,
 	trace_walt_migration_update_sum(dest_rq, p);
 }
 
-#ifdef CONFIG_HISI_MIGRATION_NOTIFY
-static inline bool
-nearly_same_freq(struct rq *rq, unsigned int cur_freq, unsigned int freq_required)
-{
-	int delta = freq_required - cur_freq;
-
-	if (freq_required > cur_freq)
-		return delta < rq->freq_inc_notify;
-
-	delta = -delta;
-	return delta < rq->freq_dec_notify;
-}
-
-static inline unsigned int util_to_freq(int cpu, u32 util)
-{
-	unsigned int max_cap = arch_scale_cpu_capacity(NULL, cpu);
-	unsigned int max_freq = cpu_rq(cpu)->cluster->max_freq;
-
-	return mult_frac(max_freq, util, max_cap);
-}
-
-static inline unsigned int estimate_freq_required(int cpu)
-{
-	return util_to_freq(cpu, boosted_freq_policy_util(cpu));
-}
-#else
 static inline bool
 nearly_same_freq(struct rq *rq, unsigned int cur_freq, unsigned int freq_required)
 {
@@ -1330,7 +1304,6 @@ static inline unsigned int estimate_freq_required(int cpu)
 {
 	return 0;
 }
-#endif
 
 static void
 inter_cluster_migration_fixup(struct task_struct *p,

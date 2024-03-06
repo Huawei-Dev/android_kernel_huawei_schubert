@@ -139,11 +139,6 @@ struct sugov_tunables {
 	bool top_task_stats_empty_window;
 #endif
 
-#ifdef CONFIG_HISI_MIGRATION_NOTIFY
-	unsigned int freq_inc_notify;
-	unsigned int freq_dec_notify;
-#endif
-
 	unsigned int up_rate_limit_us;
 	unsigned int down_rate_limit_us;
 };
@@ -1350,66 +1345,6 @@ static ssize_t fast_ramp_up_store(struct gov_attr_set *attr_set,
 	return count;
 }
 
-#ifdef CONFIG_HISI_MIGRATION_NOTIFY
-static ssize_t freq_inc_notify_show(struct gov_attr_set *attr_set, char *buf)
-{
-	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
-
-	return scnprintf(buf, PAGE_SIZE, "%u\n", tunables->freq_inc_notify);
-}
-
-static ssize_t freq_inc_notify_store(struct gov_attr_set *attr_set,
-				      const char *buf, size_t count)
-{
-	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
-	struct sugov_policy *sg_policy;
-	unsigned int val;
-	int cpu;
-
-	if (kstrtouint(buf, 10, &val))
-		return -EINVAL;
-
-	tunables->freq_inc_notify = val;
-
-	list_for_each_entry(sg_policy, &attr_set->policy_list, tunables_hook) {
-		for_each_cpu(cpu, sg_policy->policy->cpus) {
-			cpu_rq(cpu)->freq_inc_notify = val;
-		}
-	}
-
-	return count;
-}
-
-static ssize_t freq_dec_notify_show(struct gov_attr_set *attr_set, char *buf)
-{
-	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
-
-	return scnprintf(buf, PAGE_SIZE, "%u\n", tunables->freq_dec_notify);
-}
-
-static ssize_t freq_dec_notify_store(struct gov_attr_set *attr_set,
-				      const char *buf, size_t count)
-{
-	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
-	struct sugov_policy *sg_policy;
-	unsigned int val;
-	int cpu;
-
-	if (kstrtouint(buf, 10, &val))
-		return -EINVAL;
-
-	tunables->freq_dec_notify = val;
-
-	list_for_each_entry(sg_policy, &attr_set->policy_list, tunables_hook) {
-		for_each_cpu(cpu, sg_policy->policy->cpus) {
-			cpu_rq(cpu)->freq_dec_notify = val;
-		}
-	}
-
-	return count;
-}
-#endif /* CONFIG_HISI_MIGRATION_NOTIFY */
-
 #ifdef CONFIG_SCHED_HISI_TOP_TASK
 static ssize_t top_task_hist_size_show(struct gov_attr_set *attr_set, char *buf)
 {
@@ -1782,10 +1717,6 @@ static struct governor_attr top_task_hist_size = __ATTR_RW(top_task_hist_size);
 static struct governor_attr top_task_stats_policy = __ATTR_RW(top_task_stats_policy);
 static struct governor_attr top_task_stats_empty_window = __ATTR_RW(top_task_stats_empty_window);
 #endif
-#ifdef CONFIG_HISI_MIGRATION_NOTIFY
-static struct governor_attr freq_inc_notify = __ATTR_RW(freq_inc_notify);
-static struct governor_attr freq_dec_notify = __ATTR_RW(freq_dec_notify);
-#endif
 
 static struct attribute *sugov_attributes[] = {
 	&up_rate_limit_us.attr,
@@ -1810,10 +1741,6 @@ static struct attribute *sugov_attributes[] = {
 	&top_task_stats_policy.attr,
 	&top_task_stats_empty_window.attr,
 #endif
-#ifdef CONFIG_HISI_MIGRATION_NOTIFY
-	&freq_inc_notify.attr,
-	&freq_dec_notify.attr,
-#endif
 	NULL
 };
 
@@ -1835,10 +1762,6 @@ static struct governor_user_attr schedutil_user_attrs[] = {
 	{.name = "top_task_hist_size", .uid = SYSTEM_UID, .gid = SYSTEM_GID, .mode = 0660},
 	{.name = "top_task_stats_policy", .uid = SYSTEM_UID, .gid = SYSTEM_GID, .mode = 0660},
 	{.name = "top_task_stats_empty_window", .uid = SYSTEM_UID, .gid = SYSTEM_GID, .mode = 0660},
-#endif
-#ifdef CONFIG_HISI_MIGRATION_NOTIFY
-	{.name = "freq_inc_notify", .uid = SYSTEM_UID, .gid = SYSTEM_GID, .mode = 0660},
-	{.name = "freq_dec_notify", .uid = SYSTEM_UID, .gid = SYSTEM_GID, .mode = 0660},
 #endif
 	/* add here */
 	INVALID_ATTR,
@@ -2014,11 +1937,6 @@ static int sugov_init(struct cpufreq_policy *policy)
 	spin_lock_init(&tunables->above_hispeed_delay_lock);
 	spin_lock_init(&tunables->min_sample_time_lock);
 #endif
-#ifdef CONFIG_HISI_MIGRATION_NOTIFY
-	tunables->freq_inc_notify = DEFAULT_FREQ_INC_NOTIFY;
-	tunables->freq_dec_notify = DEFAULT_FREQ_DEC_NOTIFY;
-#endif
-
 	if (policy->up_transition_delay_us && policy->down_transition_delay_us) {
 		tunables->up_rate_limit_us = policy->up_transition_delay_us;
 		tunables->down_rate_limit_us = policy->down_transition_delay_us;
