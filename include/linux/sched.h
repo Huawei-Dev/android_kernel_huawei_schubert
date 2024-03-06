@@ -1875,9 +1875,6 @@ struct task_struct {
 	u64 last_wake_ts;
 #endif
 
-#ifdef CONFIG_HISI_CORE_CTRL
-	int heavy_task;
-#endif
 #ifdef CONFIG_HISI_RTG
 	struct related_thread_group *grp;
 	struct list_head grp_list;

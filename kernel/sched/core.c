@@ -88,11 +88,6 @@
 #include "../workqueue_internal.h"
 #include "../smpboot.h"
 
-#ifdef CONFIG_HISI_CORE_CTRL
-#include <linux/hisi/hisi_core_ctl.h>
-#include "../time/tick-internal.h"
-#endif
-
 #ifdef CONFIG_HISI_BB
 #include <linux/hisi/rdr_hisi_ap_hook.h>
 #endif
@@ -2439,9 +2434,6 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
 #ifdef CONFIG_SCHED_WALT
 	p->last_sleep_ts		= 0;
 #endif
-#ifdef CONFIG_HISI_CORE_CTRL
-	p->heavy_task			= 0;
-#endif
 
 	INIT_LIST_HEAD(&p->se.group_node);
 	walt_init_new_task_load(p);
@@ -3426,11 +3418,6 @@ void scheduler_tick(void)
 
 #ifdef CONFIG_HISI_EAS_SCHED
 	sugov_check_freq_update(cpu);
-#endif
-
-#ifdef CONFIG_HISI_CORE_CTRL
-	if (cpu == tick_do_timer_cpu)
-		core_ctl_check();
 #endif
 }
 

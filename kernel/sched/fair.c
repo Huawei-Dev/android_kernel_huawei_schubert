@@ -346,20 +346,6 @@ static inline void update_load_set(struct load_weight *lw, unsigned long w)
 	lw->inv_weight = 0;
 }
 
-#ifdef CONFIG_HISI_CORE_CTRL
-static void inc_cfs_nr_heavy_running(struct rq *update_rq,
-				     struct task_struct *p);
-static void dec_cfs_nr_heavy_running(struct rq *update_rq,
-				     struct task_struct *p);
-static inline void update_cfs_nr_heavy_running(struct rq *update_rq,
-					       struct task_struct *p)
-{
-	dec_cfs_nr_heavy_running(update_rq, p);
-	inc_cfs_nr_heavy_running(update_rq, p);
-}
-#endif
-
-
 /*
  * Increase the granularity value when there are more CPUs,
  * because with more CPUs the 'effective latency' as visible
@@ -5193,9 +5179,6 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 
 	if (!se) {
 		walt_inc_cumulative_runnable_avg(rq, p);
-#ifdef CONFIG_HISI_CORE_CTRL
-		inc_cfs_nr_heavy_running(rq, p);
-#endif
 #ifdef CONFIG_HISI_EAS_SCHED
 		rcu_read_lock();
 		sd = rcu_dereference(rq->sd);
@@ -5288,11 +5271,6 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 	 * selection of the OPP.
 	 */
 	schedtune_dequeue_task(p, cpu_of(rq));
-
-#ifdef CONFIG_HISI_CORE_CTRL
-	if (!se)
-		dec_cfs_nr_heavy_running(rq, p);
-#endif
 
 	if (!se)
 		walt_dec_cumulative_runnable_avg(rq, p);
@@ -8228,31 +8206,6 @@ static void task_dead_fair(struct task_struct *p)
 #else
 #define task_fits_max(p, cpu) true
 #endif /* CONFIG_SMP */
-
-#ifdef CONFIG_HISI_CORE_CTRL
-static void inc_cfs_nr_heavy_running(struct rq *update_rq,
-				     struct task_struct *p)
-{
-	if (p->heavy_task)
-		return;
-
-	if (!task_fits_max(p, cpu_of(update_rq))) {
-		update_rq->nr_heavy_running++;
-		p->heavy_task = 1;
-	}
-}
-
-static void dec_cfs_nr_heavy_running(struct rq *update_rq,
-				     struct task_struct *p)
-{
-	if (p->heavy_task) {
-		update_rq->nr_heavy_running--;
-		p->heavy_task = 0;
-	}
-
-	WARN_ON(update_rq->nr_heavy_running < 0);
-}
-#endif
 
 static unsigned long
 wakeup_gran(struct sched_entity *curr, struct sched_entity *se)
@@ -11720,9 +11673,6 @@ static void task_tick_fair(struct rq *rq, struct task_struct *curr, int queued)
 	if (static_branch_unlikely(&sched_numa_balancing))
 		task_tick_numa(rq, curr);
 
-#ifdef CONFIG_HISI_CORE_CTRL
-	update_cfs_nr_heavy_running(rq, curr);
-#endif
 #ifdef CONFIG_SMP
 #ifdef CONFIG_HISI_EAS_SCHED
 	rcu_read_lock();
