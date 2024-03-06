@@ -377,13 +377,6 @@ extern int runqueue_is_locked(int cpu);
 
 extern void sched_exit(struct task_struct *p);
 
-#ifdef CONFIG_HISI_CPU_ISOLATION
-extern int sched_isolate_count(const cpumask_t *mask, bool include_offline);
-extern int sched_isolate_cpu(int cpu);
-extern int sched_isolate_cpu_unlocked(int cpu);
-extern int sched_unisolate_cpu(int cpu);
-extern int sched_unisolate_cpu_unlocked(int cpu, bool reset_vote);
-#else
 static inline int sched_isolate_count(const cpumask_t *mask,
 				      bool include_offline)
 {
@@ -416,7 +409,6 @@ static inline int sched_unisolate_cpu_unlocked(int cpu, bool reset_vote)
 {
 	return 0;
 }
-#endif
 
 #if defined(CONFIG_SMP) && defined(CONFIG_NO_HZ_COMMON)
 extern void nohz_balance_enter_idle(int cpu);
@@ -473,11 +465,6 @@ extern int proc_dowatchdog_thresh(struct ctl_table *table, int write,
 extern unsigned int  softlockup_panic;
 extern unsigned int  hardlockup_panic;
 void lockup_detector_init(void);
-#ifdef CONFIG_HISI_CPU_ISOLATION
-extern void watchdog_enable(unsigned int cpu);
-extern void watchdog_disable(unsigned int cpu);
-extern bool watchdog_configured(unsigned int cpu);
-#endif
 #else
 static inline void touch_softlockup_watchdog_sched(void)
 {
@@ -494,18 +481,6 @@ static inline void touch_all_softlockup_watchdogs(void)
 static inline void lockup_detector_init(void)
 {
 }
-#ifdef CONFIG_HISI_CPU_ISOLATION
-static inline void watchdog_enable(unsigned int cpu)
-{
-}
-static inline void watchdog_disable(unsigned int cpu)
-{
-}
-static inline bool watchdog_configured(unsigned int cpu)
-{
-	return true;
-}
-#endif
 #endif
 
 #ifdef CONFIG_DETECT_HUNG_TASK

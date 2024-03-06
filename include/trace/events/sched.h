@@ -760,41 +760,6 @@ TRACE_EVENT(core_ctl_set_boost,/* [false alarm]:fortify */
 );/* [false alarm]:fortify */
 #endif /* CONFIG_HISI_CORE_CTRL */
 
-#ifdef CONFIG_HISI_CPU_ISOLATION
-/*
- * sched_isolate - called when cores are isolated/unisolated
- *
- * @time: amount of time in us it took to isolate/unisolate
- * @isolate: 1 if isolating, 0 if unisolating
- *
- */
-TRACE_EVENT(sched_isolate,/* [false alarm]:fortify */
-
-	TP_PROTO(unsigned int requested_cpu, unsigned int isolated_cpus,
-		 u64 start_time, unsigned char isolate),
-
-	TP_ARGS(requested_cpu, isolated_cpus, start_time, isolate),
-
-	TP_STRUCT__entry(
-		__field( u32, requested_cpu	)
-		__field( u32, isolated_cpus	)
-		__field( u32, time		)
-		__field( unsigned char, isolate	)
-	),
-
-	TP_fast_assign(
-		__entry->requested_cpu	= requested_cpu;
-		__entry->isolated_cpus	= isolated_cpus;
-		__entry->time		= div64_u64(sched_clock() - start_time, 1000);
-		__entry->isolate	= isolate;
-	),
-
-	TP_printk("iso cpu=%u cpus=0x%x time=%u us isolated=%d",
-		  __entry->requested_cpu, __entry->isolated_cpus,
-		  __entry->time, __entry->isolate)
-);/* [false alarm]:fortify */
-#endif /* CONFIG_HISI_CPU_ISOLATION */
-
 TRACE_EVENT(sched_contrib_scale_f,
 
 	TP_PROTO(int cpu, unsigned long freq_scale_factor,
