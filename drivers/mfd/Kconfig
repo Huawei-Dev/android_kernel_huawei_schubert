@@ -1645,24 +1645,6 @@ config HISI_PMIC
 	  including regulators, codec, ADCs, Coulomb counter, etc. Memory
 	  mapped I/O ports are the way of communication with it.
 
-config HISI_PMIC_PMU_SPMI
-	tristate "HiSilicon PMU/Codec IC and use spmi passageway"
-	depends on OF
-	depends on HISI_SPMI
-	help
-	  This driver supports HiSilicon Hisi power management and codec IC,
-	  including regulators, codec, ADCs, Coulomb counter, etc. Memory
-	  mapped I/O ports are the way of communication with it. and use spmi
-	  passageway read pmu address.
-
-config HISI_PMIC_DCXO
-	tristate "HiSilicon PMU DCXO cali"
-	depends on OF
-	depends on HISI_PMIC_PMU_SPMI
-	help
-	   For platform later than atlt, we put PMU dcxo c1 c2 calibration in fastboot.
-	   Earlier, modem do this in kernel init process, which can cause pmu's clock unstable.
-
 config HISI_HI6421V800_PMU
         tristate "HiSilicon 6421v800 IC"
         depends on OF
@@ -1680,12 +1662,6 @@ config HISI_HI6421V700_PMU
         depends on OF
         help
           discriminate pmu ic for pmussi passageway.
-
-config HISI_6423_PMIC_PMU_SPMI
-	tristate "HiSilicon 6423 PMU/Codec IC and use spmi passageway"
-	depends on OF
-	depends on HISI_SPMI
-	help
 
 config HISI_HI6555V200_PMU
         tristate "HiSilicon 6555v200 IC"
@@ -1712,23 +1688,6 @@ config HISI_PMIC_MNTN
 	  This driver supports HiSilicon Hisi power management and codec IC,
 	  including regulators, codec, ADCs, Coulomb counter, etc. Memory
 	  mapped I/O ports are the way of communication with it.
-
-config HISI_PMIC_MNTN_SPMI
-	tristate "HiSilicon spmi pmic mntn"
-	depends on OF
-	depends on HISI_PMIC_PMU_SPMI
-	help
-	  This driver supports HiSilicon Hisi power management and codec IC,
-	  which passage is spmi,including regulators, codec, ADCs, Coulomb counter, etc.
-	  Memory mapped I/O ports are the way of communication with it.
-
-config HISI_VBAT_DROP_PRT
-	tristate "HiSilicon vbat drop protect"
-	depends on OF
-	depends on HISI_PMIC_PMU_SPMI
-	help
-	  This driver supports HiSilicon battery vol drop protect by auto reducing 
-	    cpu core frequency. 
 
 menu "Multimedia Capabilities Port drivers"
 	depends on ARCH_SA1100

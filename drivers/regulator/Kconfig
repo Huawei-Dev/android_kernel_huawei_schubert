@@ -956,13 +956,6 @@ config HISI_REGULATOR
 	  This driver provides support for the voltage regulators on the
 	  HiSilicon Hisi PMU / Codec IC.
 
-config HISI_REGULATOR_SPMI
-	tristate "HiSilicon  PMIC regulators from spmi device"
-	depends on HISI_PMIC_PMU_SPMI
-	help
-	  This driver provides support for the voltage regulators on the
-	  HiSilicon Hisi PMU / Codec IC.
-
 config HISI_CHARGER_REGULATOR
 	tristate "Hisi Charger regulators"
 	depends on HISI_CHARGER_POWER

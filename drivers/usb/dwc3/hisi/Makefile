@@ -40,10 +40,6 @@ ifeq ($(CONFIG_USB_DWC3_VBUS_PLT),y)
 	usb-vbus-y    += hisi_usb_vbus_plt.o
 endif
 
-ifeq ($(CONFIG_USB_DWC3_VBUS_SPMI),y)
-	usb-vbus-y    += hisi_usb_vbus_spmi.o
-endif
-
 obj-$(CONFIG_USB_DWC3_NOV)		+= dwc3-nov.o hisi_usb2_bc.o
 obj-$(CONFIG_USB_DWC3_OCT)		+= dwc3-oct.o hisi_usb2_bc.o
 # hisi_usb3_31phy must before dwc3-plat(e.g mar,apr), module_init called base on the order in Makefile

@@ -13,10 +13,6 @@ extern int pmu_dcxo_set(uint16_t dcxo_ctrim, uint16_t dcxo_c2_fix);
 extern int pmu_dcxo_get(uint16_t *dcxo_ctrim, uint16_t *dcxo_c2_fix);
 EXPORT_SYMBOL(pmu_dcxo_get);
 EXPORT_SYMBOL(pmu_dcxo_set);
-#ifndef CONFIG_HISI_PMIC_DCXO
-int pmu_dcxo_set(uint16_t dcxo_ctrim, uint16_t dcxo_c2_fix){ return 0;}
-int pmu_dcxo_get(uint16_t *dcxo_ctrim, uint16_t *dcxo_c2_fix){ return 0;}
-#else
 
 struct pmu_dcxo {
 	uint16_t dcxo_ctrim;
@@ -98,5 +94,3 @@ int pmu_dcxo_get_test(int get, uint16_t v1, uint16_t v2)
 
 	return ret;
 }
-
-#endif

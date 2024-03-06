@@ -77,7 +77,7 @@ unsigned int get_uv_mntn_status(void);
 void clear_uv_mntn_resered_reg_bit(void);
 void set_uv_mntn_resered_reg_bit(void);
 
-#if defined(CONFIG_HISI_PMIC) || defined(CONFIG_HISI_PMIC_PMU_SPMI)
+#ifdef CONFIG_HISI_PMIC
 /* Register Access Helpers */
 u32 hisi_pmic_read(struct hisi_pmic *pmic, int reg);
 void hisi_pmic_write(struct hisi_pmic *pmic, int reg, u32 val);
