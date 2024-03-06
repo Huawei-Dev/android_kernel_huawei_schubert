@@ -1600,14 +1600,6 @@ struct ravg {
 	u32 prev_window_cpu[NR_CPUS];
 	u32 curr_window, prev_window;
 	u16 active_windows;
-#ifdef CONFIG_SCHED_HISI_MIGRATE_SPREAD_LOAD
-	cpumask_t prev_cpus, curr_cpus;
-#endif
-#ifdef CONFIG_SCHED_HISI_TOP_TASK
-	u32 load_sum, load_avg;
-	u32 load_sum_history[RAVG_HIST_SIZE_MAX];
-	u32 prev_load, curr_load;
-#endif
 #ifdef CONFIG_HISI_RTG
 	u64 curr_window_load, prev_window_load;
 	u64 curr_window_exec, prev_window_exec;

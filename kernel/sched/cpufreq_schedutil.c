@@ -133,12 +133,6 @@ struct sugov_tunables {
 	bool fast_ramp_down;
 #endif
 
-#ifdef CONFIG_SCHED_HISI_TOP_TASK
-	unsigned int top_task_hist_size;
-	unsigned int top_task_stats_policy;
-	bool top_task_stats_empty_window;
-#endif
-
 	unsigned int up_rate_limit_us;
 	unsigned int down_rate_limit_us;
 };
@@ -1345,99 +1339,6 @@ static ssize_t fast_ramp_up_store(struct gov_attr_set *attr_set,
 	return count;
 }
 
-#ifdef CONFIG_SCHED_HISI_TOP_TASK
-static ssize_t top_task_hist_size_show(struct gov_attr_set *attr_set, char *buf)
-{
-	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
-
-	return scnprintf(buf, PAGE_SIZE, "%u\n", tunables->top_task_hist_size);
-}
-
-static ssize_t top_task_hist_size_store(struct gov_attr_set *attr_set,
-				      const char *buf, size_t count)
-{
-	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
-	struct sugov_policy *sg_policy;
-	unsigned int val;
-	int cpu;
-
-	if (kstrtouint(buf, 10, &val))
-		return -EINVAL;
-
-	/* Allowed range: [1, RAVG_HIST_SIZE_MAX] */
-	if (val < 1 || val > RAVG_HIST_SIZE_MAX)
-		return -EINVAL;
-
-	tunables->top_task_hist_size = val;
-
-	list_for_each_entry(sg_policy, &attr_set->policy_list, tunables_hook) {
-		for_each_cpu(cpu, sg_policy->policy->cpus) {
-			cpu_rq(cpu)->top_task_hist_size = val;
-		}
-	}
-
-	return count;
-}
-
-static ssize_t top_task_stats_policy_show(struct gov_attr_set *attr_set, char *buf)
-{
-	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
-
-	return scnprintf(buf, PAGE_SIZE, "%u\n", tunables->top_task_stats_policy);
-}
-
-static ssize_t top_task_stats_policy_store(struct gov_attr_set *attr_set,
-				      const char *buf, size_t count)
-{
-	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
-	struct sugov_policy *sg_policy;
-	unsigned int val;
-	int cpu;
-
-	if (kstrtouint(buf, 10, &val))
-		return -EINVAL;
-
-	tunables->top_task_stats_policy = val;
-
-	list_for_each_entry(sg_policy, &attr_set->policy_list, tunables_hook) {
-		for_each_cpu(cpu, sg_policy->policy->cpus) {
-			cpu_rq(cpu)->top_task_stats_policy = val;
-		}
-	}
-
-	return count;
-}
-
-static ssize_t top_task_stats_empty_window_show(struct gov_attr_set *attr_set, char *buf)
-{
-	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
-
-	return scnprintf(buf, PAGE_SIZE, "%u\n", tunables->top_task_stats_empty_window);
-}
-
-static ssize_t top_task_stats_empty_window_store(struct gov_attr_set *attr_set,
-				      const char *buf, size_t count)
-{
-	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
-	struct sugov_policy *sg_policy;
-	unsigned int val;
-	int cpu;
-
-	if (kstrtouint(buf, 10, &val))
-		return -EINVAL;
-
-	tunables->top_task_stats_empty_window = val;
-
-	list_for_each_entry(sg_policy, &attr_set->policy_list, tunables_hook) {
-		for_each_cpu(cpu, sg_policy->policy->cpus) {
-			cpu_rq(cpu)->top_task_stats_empty_window = val;
-		}
-	}
-
-	return count;
-}
-#endif /* CONFIG_SCHED_HISI_TOP_TASK */
-
 static unsigned int *get_tokenized_data(const char *buf, int *num_tokens)
 {
 	const char *cp;
@@ -1712,11 +1613,6 @@ static struct governor_attr timer_slack = __ATTR_RW(timer_slack);
 static struct governor_attr fast_ramp_down = __ATTR_RW(fast_ramp_down);
 static struct governor_attr fast_ramp_up = __ATTR_RW(fast_ramp_up);
 #endif
-#ifdef CONFIG_SCHED_HISI_TOP_TASK
-static struct governor_attr top_task_hist_size = __ATTR_RW(top_task_hist_size);
-static struct governor_attr top_task_stats_policy = __ATTR_RW(top_task_stats_policy);
-static struct governor_attr top_task_stats_empty_window = __ATTR_RW(top_task_stats_empty_window);
-#endif
 
 static struct attribute *sugov_attributes[] = {
 	&up_rate_limit_us.attr,
@@ -1736,11 +1632,6 @@ static struct attribute *sugov_attributes[] = {
 	&fast_ramp_down.attr,
 	&fast_ramp_up.attr,
 #endif
-#ifdef CONFIG_SCHED_HISI_TOP_TASK
-	&top_task_hist_size.attr,
-	&top_task_stats_policy.attr,
-	&top_task_stats_empty_window.attr,
-#endif
 	NULL
 };
 
@@ -1757,11 +1648,6 @@ static struct governor_user_attr schedutil_user_attrs[] = {
 	{.name = "boostpulse_duration", .uid = SYSTEM_UID, .gid = SYSTEM_GID, .mode = 0660},
 	{.name = "fast_ramp_down", .uid = SYSTEM_UID, .gid = SYSTEM_GID, .mode = 0660},
 	{.name = "fast_ramp_up", .uid = SYSTEM_UID, .gid = SYSTEM_GID, .mode = 0660},
-#endif
-#ifdef CONFIG_SCHED_HISI_TOP_TASK
-	{.name = "top_task_hist_size", .uid = SYSTEM_UID, .gid = SYSTEM_GID, .mode = 0660},
-	{.name = "top_task_stats_policy", .uid = SYSTEM_UID, .gid = SYSTEM_GID, .mode = 0660},
-	{.name = "top_task_stats_empty_window", .uid = SYSTEM_UID, .gid = SYSTEM_GID, .mode = 0660},
 #endif
 	/* add here */
 	INVALID_ATTR,

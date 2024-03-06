@@ -2299,9 +2299,6 @@ void sched_exit(struct task_struct *p)
 	_sched_set_group_id(p, DEFAULT_RTG_GRP_ID);
 	rq = task_rq_lock(p, &flags);
 
-#ifdef CONFIG_SCHED_HISI_TOP_TASK
-	top_task_exit(p, rq);
-#endif
 	task_rq_unlock(rq, p, &flags);
 #endif
 }
@@ -8050,23 +8047,6 @@ void __init sched_init(void)
 		rq->avg_irqload = 0;
 		rq->irqload_ts = 0;
 #endif
-#ifdef CONFIG_SCHED_HISI_TOP_TASK
-		rq->curr_table = 0;
-
-		for (j = 0; j < NUM_TRACKED_WINDOWS; j++) {
-			rq->top_task_index[j] = ZERO_LOAD_INDEX;
-			rq->top_tasks[j] = kcalloc(
-				NUM_LOAD_INDICES, sizeof(struct top_task_entry), GFP_NOWAIT);
-
-			/* No other choice */
-			BUG_ON(!rq->top_tasks[j]);
-		}
-
-		rq->top_task_hist_size = DEFAULT_TOP_TASK_HIST_SIZE;
-		rq->top_task_stats_policy = DEFAULT_TOP_TASK_STATS_POLICY;
-		rq->top_task_stats_empty_window = DEFAULT_TOP_TASK_STATS_EMPTY_WINDOW;
-#endif
-
 		INIT_LIST_HEAD(&rq->cfs_tasks);
 
 		rq_attach_root(rq, &def_root_domain);

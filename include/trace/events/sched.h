@@ -686,13 +686,8 @@ TRACE_EVENT(sched_contrib_scale_f,
 #ifdef CONFIG_SCHED_WALT
 extern unsigned int sysctl_sched_use_walt_cpu_util;
 extern unsigned int sysctl_sched_use_walt_task_util;
-#ifdef CONFIG_SCHED_HISI_WALT_WINDOW_SIZE_TUNABLE
-extern unsigned int walt_ravg_window;
-extern bool walt_disabled;
-#else
 extern const unsigned int walt_ravg_window;
 extern const bool walt_disabled;
-#endif
 #endif
 
 /*
@@ -1360,42 +1355,6 @@ TRACE_EVENT(walt_window_rollover,
 	TP_printk("cpu=%d windows=%d",
 		__entry->cpu, __entry->windows)
 );
-
-#ifdef CONFIG_SCHED_HISI_TOP_TASK
-TRACE_EVENT(walt_update_top_task,
-
-	TP_PROTO(struct rq *rq, struct task_struct *p),
-
-	TP_ARGS(rq, p),
-
-	TP_STRUCT__entry(
-		__array(	char,	comm,   TASK_COMM_LEN	)
-		__field(	pid_t,	pid			)
-		__field(	 int,	curr_load		)
-		__field(	 int,	prev_load		)
-		__field(	 int,	curr_top		)
-		__field(	 int,	prev_top		)
-		__field(	 int,	cpu			)
-	),
-
-	TP_fast_assign(
-		memcpy(__entry->comm, p->comm, TASK_COMM_LEN);
-		__entry->pid            = p->pid;
-		__entry->curr_load      = p->ravg.curr_load;
-		__entry->prev_load      = p->ravg.prev_load;
-		__entry->curr_top       = rq->top_task_index[rq->curr_table];
-		__entry->prev_top       = rq->top_task_index[1 - rq->curr_table];
-		__entry->cpu            = rq->cpu;
-	),
-
-	TP_printk("cpu=%d pid=%d comm=%s curr_load=%d prev_load=%d curr_top=%d prev_top=%d",
-		__entry->cpu, __entry->pid, __entry->comm,
-		__entry->curr_load,
-		__entry->prev_load,
-		__entry->curr_top,
-		__entry->prev_top)
-);
-#endif /* CONFIG_SCHED_HISI_TOP_TASK */
 
 #endif /* CONFIG_SCHED_WALT */
 
