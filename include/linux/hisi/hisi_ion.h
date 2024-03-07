@@ -152,21 +152,6 @@ enum ION_HISI_HEAP_MODE {
 	ION_IOMMU_MODE=1,
 };
 
-#ifdef CONFIG_ION_HISI_SECSG
-enum ion_ta_tag{
-	ION_SEC_CMD_PGATBLE_INIT = 0,
-	ION_SEC_CMD_ALLOC,
-	ION_SEC_CMD_FREE,
-	ION_SEC_CMD_MAP_IOMMU,
-	ION_SEC_CMD_UNMAP_IOMMU,
-	ION_SEC_CMD_MAP_USER,
-	ION_SEC_CMD_UNMAP_USER,
-	ION_SEC_CMD_TABLE_SET,
-	ION_SEC_CMD_TABLE_CLEAN,
-	ION_SEC_CMD_MAX,
-};
-#endif
-
 #define TINY_SYSTEM   0x0        /* tiny version system for chip test*/
 #define FULL_SYSTEM   0x1        /* full version system */
 

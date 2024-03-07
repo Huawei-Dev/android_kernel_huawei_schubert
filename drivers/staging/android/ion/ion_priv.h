@@ -86,9 +86,6 @@ struct ion_buffer {
 	char task_comm[TASK_COMM_LEN];
 	pid_t pid;
 	struct ion_iommu_map *iommu_map;
-#ifdef CONFIG_ION_HISI_SECSG
-	unsigned int id;
-#endif
 };
 void ion_buffer_destroy(struct ion_buffer *buffer);
 
@@ -433,19 +430,14 @@ static inline struct ion_heap *ion_seccm_heap_create(struct ion_platform_heap
 static inline void ion_seccm_heap_destroy(struct ion_heap *ih){ }
 #endif
 
-#ifdef CONFIG_ION_HISI_SECSG
-struct ion_heap *ion_secsg_heap_create(struct ion_platform_heap *);
-void ion_secsg_heap_destroy(struct ion_heap *);
-#else
 static inline struct ion_heap *ion_secsg_heap_create(struct ion_platform_heap
 		*iph)
 {
 	return NULL;
 }
 static inline void ion_secsg_heap_destroy(struct ion_heap *ih){ }
-#endif
 
-#if (defined CONFIG_ION_HISI_SECSG) || (defined CONFIG_ION_HISI_SECCM)
+#ifdef CONFIG_ION_HISI_SECCM
 int ion_secmem_heap_phys(struct ion_heap *heap,
 		struct ion_buffer *buffer,
 		phys_addr_t *addr, size_t *len);

@@ -47,9 +47,6 @@ enum ion_heap_type {
 #ifdef CONFIG_ION_HISI_SECCM
 	ION_HEAP_TYPE_SECCM,
 #endif
-#ifdef CONFIG_ION_HISI_SECSG
-	ION_HEAP_TYPE_SECSG,
-#endif
 	ION_HEAP_TYPE_CUSTOM, /* must be last so device specific heaps always
 				 are at the end of this enum */
 	ION_HEAP_TYPE_RESERVED,
