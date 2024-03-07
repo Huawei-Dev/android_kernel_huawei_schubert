@@ -91,7 +91,6 @@ obj-y                   += busstress/$(OBB_PRODUCT_NAME)/
 endif
 
 obj-$(CONFIG_HISI_SIM_HOTPLUG)          += sim_hotplug/
-obj-$(CONFIG_HISI_SIM_HOTPLUG_SPMI)     += sim_hotplug/
 
 else
 obj-y				+= sysctrl/
