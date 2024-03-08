@@ -7,7 +7,6 @@ obj-$(CONFIG_HUAWEI_AUDIO) += audio/
 obj-$(CONFIG_CHR_NETLINK_MODULE)   += chr/
 obj-y   += connectivity/
 obj-$(CONFIG_HUAWEI_HW_DEV_DCT)  += devdetect/
-obj-$(CONFIG_HUAWEI_DEV_SELFCHECK)  += dev_selfcheck/
 
 ifneq ($(strip $(OBB_SEPARATE)),true)
 obj-$(CONFIG_VIACBP82D_3RD_MODEM) += ext_modem/
