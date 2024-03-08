@@ -50,11 +50,6 @@
 
 #include "nt36xxx.h"
 
-#if defined(CONFIG_HUAWEI_DEVKIT_QCOM)
-#include <linux/dma-mapping.h>
-#include <linux/i2c/i2c-msm-v2.h>
-#endif
-
 #define NOVATEK_ABNORMAL_DEFAULT_STATUS 0x0000
 #define NOVATEK_ERROR_CODE_0XFDFD 		0xFDFD
 #define NOVATEK_ERROR_CODE_0XFEFE 		0xFEFE
@@ -3086,15 +3081,6 @@ static int novatek_irq_bottom_half(struct ts_cmd_node *in_cmd,
 	struct ts_fingers *info =
 	    &out_cmd->cmd_param.pub_params.algo_param.info;
 
-#if defined(CONFIG_HUAWEI_DEVKIT_QCOM)
-    int i2c_retries = I2C_RW_TRIES;
-    struct i2c_adapter* adapter = NULL;
-    struct i2c_msm_ctrl *ctrl = NULL;
-    struct ts_kit_device_data *ts_dev_data = nvt_ts->chip_data;
-    struct ts_kit_platform_data *ts_platform_data = ts_dev_data->ts_platform_data;
-    struct ts_easy_wakeup_info *gesture_report_info = &ts_dev_data->easy_wakeup_info;
-#endif
-
 	int32_t ret = -1;
 	uint8_t point_data[POINT_AFT_ROI_DATA_LEN + 1] = {0};
 	uint32_t position = 0;
@@ -3122,37 +3108,6 @@ static int novatek_irq_bottom_half(struct ts_cmd_node *in_cmd,
 	out_cmd->cmd_param.pub_params.algo_param.algo_order = nvt_ts->chip_data->algo_id;
 	TS_LOG_DEBUG("order: %d\n",
 		     out_cmd->cmd_param.pub_params.algo_param.algo_order);
-
-#if defined(CONFIG_HUAWEI_DEVKIT_QCOM)
-        /*if the easy_wakeup_flag is false,status not in gesture;switch_value is false,gesture is no supported*/
-        if ((true == ts_platform_data->feature_info.wakeup_gesture_enable_info.switch_value) &&
-            (true == gesture_report_info->easy_wakeup_flag)){
-            adapter = i2c_get_adapter(ts_platform_data->bops->bus_id);
-            if (IS_ERR_OR_NULL(adapter)) {
-                TS_LOG_ERR("i2c_get_adapter failed\n");
-                out_cmd->command = TS_INVAILD_CMD;
-                return -EIO;
-            }
-
-            ctrl = (struct i2c_msm_ctrl *)adapter->dev.driver_data;
-
-            do {
-                if (ctrl->pwr_state == I2C_MSM_PM_SYS_SUSPENDED) {
-                    TS_LOG_INFO("gesture mode, waiting for i2c bus resume\n");
-                    msleep(I2C_WAIT_TIME);
-                } else { /*I2C_MSM_PM_RT_SUSPENDED or I2C_MSM_PM_RT_ACTIVE*/
-                    TS_LOG_INFO("i2c bus resuming or resumed\n");
-                    break;
-                }
-            } while (i2c_retries--);
-
-            if (ctrl->pwr_state == I2C_MSM_PM_SYS_SUSPENDED) {
-                TS_LOG_INFO("trigger gesture irq in system suspending,i2c bus can't resume, so ignore irq\n");
-                out_cmd->command = TS_INVAILD_CMD;
-                return -EINVAL;
-            }
-        }
-#endif
 
 	if (nvt_ts->support_aft) {
 		if(nvt_ts->wx_support){

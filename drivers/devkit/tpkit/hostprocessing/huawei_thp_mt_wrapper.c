@@ -27,11 +27,7 @@
 #include "contexthub_recovery.h"
 #endif
 
-#if defined(CONFIG_HUAWEI_TS_KIT_3_0)
-#include "../3_0/trace-events-touch.h"
-#else
 #define trace_touch(x...)
-#endif
 
 #define DEVICE_NAME	"input_mt_wrapper"
 

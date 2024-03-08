@@ -56,11 +56,7 @@
 #include "tui.h"
 #endif
 
-#if defined(CONFIG_HUAWEI_TS_KIT_3_0)
-#include "../3_0/trace-events-touch.h"
-#else
 #define trace_touch(x...)
-#endif
 
 struct thp_core_data *g_thp_core;
 static u8 *spi_sync_tx_buf = NULL;

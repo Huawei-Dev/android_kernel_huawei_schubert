@@ -1,4 +1,3 @@
-
 ifneq ($(TARGET_BUILD_VARIANT),user)
 EXTRA_CFLAGS += -DLCDKIT_DEBUG_ENABLE
 endif
@@ -19,15 +18,6 @@ EXTRA_CFLAGS += -Idrivers/video/fbdev/hisi/dss
 EXTRA_CFLAGS += -Idrivers/staging/android
 $(info find lcdkit hisi folder, include it now!)
 endif
-
-ifndef CONFIG_HUAWEI_DEVKIT_HISI
-obj-$(CONFIG_LCDKIT_DRIVER) += qcom/
-EXTRA_CFLAGS += -Idrivers/devkit/lcdkit/lcdkit1.0/core/common/qcom
-$(info find lcdkit qcom folder, include it now! )
-endif
-
-#for debug!!
-#$(error stop! $(mkfile_path))
 
 EXTRA_CFLAGS += -Idrivers/devkit/lcdkit/lcdkit1.0/include	\
 		-Idrivers/devkit/tpkit \
