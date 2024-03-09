@@ -22,10 +22,6 @@ enum {
 	PM_QOS_MEMORY_THROUGHPUT_UP_THRESHOLD,
 #endif
 
-#ifdef CONFIG_HISI_CPUDDR_FREQ_LINK
-	PM_QOS_ACPUDDR_LINK_GOVERNOR_LEVEL,
-#endif
-
 #ifdef CONFIG_HISI_NPUFREQ_PM_QOS
 	PM_QOS_HISI_NPU_FREQ_DNLIMIT,
 #endif
@@ -51,9 +47,6 @@ enum pm_qos_flags_status {
 #define PM_QOS_MEMORY_LATENCY_DEFAULT_VALUE	0
 #define PM_QOS_MEMORY_THROUGHPUT_DEFAULT_VALUE	0
 #define PM_QOS_MEMORY_THROUGHPUT_UP_THRESHOLD_DEFAULT_VALUE	30000
-#endif
-#ifdef CONFIG_HISI_CPUDDR_FREQ_LINK
-#define PM_QOS_ACPUDDR_LINK_GOVERNOR_LEVEL_DEFAULT_VALUE 2
 #endif
 #ifdef CONFIG_HISI_NPUFREQ_PM_QOS
 #define PM_QOS_HISI_NPU_FREQ_DNLIMIT_DEFAULT_VALUE	0
@@ -134,15 +127,6 @@ enum pm_qos_req_action {
 	PM_QOS_REMOVE_REQ	/* Remove an existing request */
 };
 
-#ifdef CONFIG_HISI_CPUDDR_FREQ_LINK
-/* Action requested to ddr cpu freq link level*/
-enum {
-	LINK_LEVEL_0 = 0,
-	LINK_LEVEL_1,
-	LINK_LEVEL_2,
-	LINK_LEVEL_MAX,
-};
-#endif
 static inline int dev_pm_qos_request_active(struct dev_pm_qos_request *req)
 {
 	return req->dev != NULL;

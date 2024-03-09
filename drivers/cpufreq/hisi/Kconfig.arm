@@ -25,13 +25,6 @@ config HISI_CPUFREQ_DT
 	help
 	  Hisilicon cpufreq-dt enable.
 
-config HISI_CPUDDR_FREQ_LINK
-	bool "Hisilicon cpu ddr freq link enable"
-	depends on CPUFREQ_DT
-	default n
-	help
-	  Hisilicon cpu ddr freq link enable.
-
 config CPU_FREQ_POWER_STAT
 	bool "Estimation of task power consumption"
 	depends on CPU_FREQ_STAT
