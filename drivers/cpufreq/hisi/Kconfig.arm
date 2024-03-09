@@ -5,12 +5,6 @@ config ARCH_HISI_MAXFREQ
 	help
 	  Hisilicon platform cpu max freq recognition.
 
-config HISI_ENABLE_GET_VAL
-	bool "Hisilicon get cpufreq param"
-	default n
-	help
-	  Hisilicon get cpufreq param.
-
 config HISI_ENABLE_HPM_DATA_COLLECT
 	bool "Hisilicon get hpm volt param"
 	depends on HISI_ENABLE_GET_VAL
