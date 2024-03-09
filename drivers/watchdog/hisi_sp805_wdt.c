@@ -452,12 +452,6 @@ static void m3_wdt_timeout_notify(unsigned int default_timeout)
 	int msg[2], ret;
 
 /* ask mcu reset its wdt timeout value  start */
-/*
-如下PSCI_MSG_TYPE_M3_WDTTIMEOUT 等宏定义，如下三个文件要保持一致:
-kernel\drivers\watchdog\sp805_wdt.c
-kernel\drivers\hisi\mntn\blackbox\platform_lpm3\rdr_hisi_lpm3.c
-vendor\hisi\confidential\lpmcu\include\psci.h
-*/
 #include <linux/hisi/ipc_msg.h>
 #define PSCI_MSG_TYPE_M3_WDTTIMEOUT IPC_CMD(OBJ_AP, OBJ_LPM3, CMD_INQUIRY, 1)
 	msg[0] = PSCI_MSG_TYPE_M3_WDTTIMEOUT;
@@ -641,17 +635,7 @@ static int sp805_wdt_suspend(void)
 	pr_info("%s+.\n", __func__);
 
 	if (watchdog_active(&wdt->wdd) || wdt->active) {
-#ifdef CONFIG_HISI_SR_AP_WATCHDOG
-		/* delay the disable operation to the lpm3 for the case
-			of system failure in the suspend&resume flow */
-		spin_lock(&wdt->lock);
-		wdt->active = false;
-		spin_unlock(&wdt->lock);
-
-		ret = wdt_ping(&wdt->wdd);
-#else
 		ret = wdt_disable(&wdt->wdd);
-#endif
 		cancel_delayed_work(&wdt->hisi_wdt_delayed_work);
 	}
 
