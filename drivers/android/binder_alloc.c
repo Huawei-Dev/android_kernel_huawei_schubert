@@ -501,10 +501,6 @@ static struct binder_buffer *binder_alloc_new_buf_locked(
 			      alloc->pid, size, alloc->free_async_space);
 	}
 
-#ifdef CONFIG_HUAWEI_BINDER_ASHMEM
-	buffer->ashmem.file = NULL;
-#endif
-
 	return buffer;
 
 err_alloc_buf_struct_failed:
@@ -665,10 +661,6 @@ static void binder_free_buf_locked(struct binder_alloc *alloc,
 void binder_alloc_free_buf(struct binder_alloc *alloc,
 			    struct binder_buffer *buffer)
 {
-#ifdef CONFIG_HUAWEI_BINDER_ASHMEM
-	binder_ashmem_unmap(alloc, buffer);
-#endif
-
 	mutex_lock(&alloc->mutex);
 	binder_free_buf_locked(alloc, buffer);
 	mutex_unlock(&alloc->mutex);
@@ -785,10 +777,6 @@ void binder_alloc_deferred_release(struct binder_alloc *alloc)
 
 		/* Transaction should already have been freed */
 		BUG_ON(buffer->transaction);
-
-#ifdef CONFIG_HUAWEI_BINDER_ASHMEM
-		binder_ashmem_recycle(buffer);
-#endif
 
 		binder_free_buf_locked(alloc, buffer);
 		buffers++;

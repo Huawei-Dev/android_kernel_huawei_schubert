@@ -3453,10 +3453,6 @@ static void binder_transaction(struct binder_proc *proc,
 		goto err_bad_offset;
 	}
 
-#ifdef CONFIG_HUAWEI_BINDER_ASHMEM
-	binder_ashmem_translate(t->buffer);
-#endif
-
 	off_end = (void *)off_start + tr->offsets_size;
 	sg_bufp = (u8 *)(PTR_ALIGN(off_end, sizeof(void *)));
 	sg_buf_end = sg_bufp + extra_buffers_size -
@@ -4302,52 +4298,6 @@ static int binder_wait_for_work(struct binder_thread *thread,
 	return ret;
 }
 
-#ifdef CONFIG_HUAWEI_BINDER_ASHMEM
-static void binder_ashmem_cleanup_transaction(struct binder_transaction *t,
-	struct binder_proc *proc, struct binder_thread *thread)
-{
-	struct binder_buffer *buffer = t->buffer;
-
-	if (buffer->target_node)
-		if (t->flags & TF_ONE_WAY) {
-			struct binder_node *buf_node;
-			struct binder_work *w;
-
-			pr_warn("Cleanup async transaction in %d/%d\n", proc->pid, thread->pid);
-			WARN_ON(!buffer->async_transaction);
-
-			buf_node = buffer->target_node;
-			binder_node_inner_lock(buf_node);
-			WARN_ON(!buf_node->has_async_transaction);
-			WARN_ON(buf_node->proc != proc);
-			w = binder_dequeue_work_head_ilocked(
-					&buf_node->async_todo);
-			if (!w) {
-				buf_node->has_async_transaction = 0;
-			} else {
-				binder_enqueue_work_ilocked(
-						w, &proc->todo);
-				binder_wakeup_proc_ilocked(proc);
-			}
-			binder_node_inner_unlock(buf_node);
-
-			binder_free_transaction(t);
-		} else
-			binder_send_failed_reply(t, BR_FAILED_REPLY);
-
-	else {
-		binder_free_transaction(t);
-
-		/* Failed to receive a reply, so prepare a faker instead */
-		thread->reply_error.cmd = BR_FAILED_REPLY;
-		binder_enqueue_thread_work(thread, &thread->reply_error.work);
-	}
-
-	binder_transaction_buffer_release(proc, buffer, NULL);
-	binder_alloc_free_buf(&proc->alloc, buffer);
-}
-#endif
-
 static int binder_thread_read(struct binder_proc *proc,
 			      struct binder_thread *thread,
 			      binder_uintptr_t binder_buffer, size_t size,
@@ -4624,13 +4574,6 @@ retry:
 		trd->code = t->code;
 		trd->flags = t->flags;
 		trd->sender_euid = from_kuid(current_user_ns(), t->sender_euid);
-
-#ifdef CONFIG_HUAWEI_BINDER_ASHMEM
-		if (binder_ashmem_map(&proc->alloc, t->buffer) < 0) {
-			binder_ashmem_cleanup_transaction(t, proc, thread);
-			continue;
-		}
-#endif
 
 		t_from = binder_get_txn_from(t);
 		if (t_from) {
@@ -5397,15 +5340,6 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		}
 		break;
 	}
-#ifdef CONFIG_HUAWEI_BINDER_ASHMEM
-	case BINDER_CONFIG_HUAWEI_ASHMEM: {
-		ret = binder_ashmem_config(&proc->alloc, arg);
-		if (ret)
-			goto err;
-
-		break;
-	}
-#endif
 
 #ifdef CONFIG_HARMONY_BINDER_HANDLE
 	case BINDER_TRANSLATE_HANDLE: {
