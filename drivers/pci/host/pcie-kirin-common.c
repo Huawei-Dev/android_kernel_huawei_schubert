@@ -833,49 +833,10 @@ void pcie_memcpy(ulong dst, ulong src, uint32_t size)
 	ulong dst_t = dst;
 	ulong src_t = src;
 
-	if (IS_ENABLED(CONFIG_KIRIN_PCIE_MAR)) {
-		uint dsize;
-		uint64_t data_64 = 0;
-		uint64_t data_32 = 0;
-		uint64_t data_8 = 0;
-#if defined(CONFIG_64BIT)
-		bool is_64bit_unaligned = (dst_t & 0x7);
-#endif
-		dsize = sizeof(uint64_t);
-
-		/* Do the transfer(s) */
-		while (size) {
-			if (size >= sizeof(uint64_t)) {
-				if (is_64bit_unaligned) {
-					data_32= pcie_rd_32((char *)(uintptr_t)src_t);
-					pcie_wr_32(data_32, (char *)(uintptr_t)dst_t);
-					size -= 4;
-					dst_t += 4;
-					src_t += 4;
-					is_64bit_unaligned = (dst_t & 0x7);
-					continue;
-				} else {
-					data_64= pcie_rd_64((char *)(uintptr_t)src_t);
-					pcie_wr_64(data_64, (char *)(uintptr_t)dst_t);
-				}
-			} else {
-				dsize = sizeof(uint8_t);
-				data_8= pcie_rd_8((char *)(uintptr_t)src_t);
-				pcie_wr_8(data_8, (char *)(uintptr_t)dst_t);
-			}
-
-			/* Adjust for next transfer (if any) */
-			if ((size -= dsize)) {
-				src_t += dsize;
-				dst_t += dsize;
-			}
-		}
-	}else{
-		ret = memcpy_s((void *)(uintptr_t)dst_t, size, (void *)(uintptr_t)src_t, size);
-		if (ret) {
-			PCIE_PR_ERR("%s:Fail to do memcpy\n", __func__);
-			return;
-		}
+	ret = memcpy_s((void *)(uintptr_t)dst_t, size, (void *)(uintptr_t)src_t, size);
+	if (ret) {
+		PCIE_PR_ERR("%s:Fail to do memcpy\n", __func__);
+		return;
 	}
 }
 

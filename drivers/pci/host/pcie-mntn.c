@@ -140,86 +140,7 @@ MUTEX_UNLOCK:
 
 typedef void (* WIFI_DUMP_FUNC) (void);
 typedef void (* DEVICE_DUMP_FUNC) (void);
-#ifdef CONFIG_KIRIN_PCIE_NOC_DBG
-bool g_pcie_dump_flag = false;
-WIFI_DUMP_FUNC g_device_dump = NULL;
 
-bool is_pcie_target(int target_id)
-{
-	u32 i;
-
-	for (i = 0; i < g_rc_num; i++)
-		if (g_kirin_pcie[i].dtsinfo.noc_target_id == target_id)
-			return true;
-
-	return false;
-}
-
-void set_pcie_dump_flag(int target_id)
-{
-	u32 i;
-
-	for (i = 0; i < g_rc_num; i++)
-		if (g_kirin_pcie[i].dtsinfo.noc_target_id == target_id) {
-			g_kirin_pcie[i].dtsinfo.noc_mntn = 1;
-			return;
-		}
-}
-
-void clear_pcie_dump_flag(void)
-{
-	u32 i;
-
-	for (i = 0; i < g_rc_num; i++)
-		if (g_kirin_pcie[i].dtsinfo.noc_mntn)
-			g_kirin_pcie[i].dtsinfo.noc_mntn = 0;
-}
-
-bool get_pcie_dump_flag(void)
-{
-	u32 i;
-
-	for (i = 0; i < g_rc_num; i++)
-		if (g_kirin_pcie[i].dtsinfo.noc_mntn)
-			return true;
-
-	return false;
-}
-
-void dump_pcie_apb_info(void)
-{
-	struct kirin_pcie *pcie = NULL;
-	u32 i;
-
-	for (i = 0; i < g_rc_num; i++)
-		if (g_kirin_pcie[i].dtsinfo.noc_mntn)
-			pcie = &g_kirin_pcie[i];
-
-	if (!pcie) {
-		PCIE_PR_INFO("Not set!");
-		return;
-	}
-
-	if (!atomic_read(&pcie->is_power_on)) {
-		PCIE_PR_ERR("PCIe is Poweroff");
-		return;
-	}
-
-	dump_apb_register(pcie);
-
-	if (g_device_dump) {
-		PCIE_PR_ERR("Dump wifi info");
-		g_device_dump();
-	}
-
-	clear_pcie_dump_flag();
-}
-
-void register_device_dump_func(WIFI_DUMP_FUNC func)
-{
-	g_device_dump = func;
-}
-#else
 bool is_pcie_target(int target_id)
 {
 	return false;
@@ -249,7 +170,6 @@ void register_device_dump_func(WIFI_DUMP_FUNC func)
 {
 	return;
 }
-#endif
 
 void register_wifi_dump_func(WIFI_DUMP_FUNC func)
 {

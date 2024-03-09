@@ -878,22 +878,6 @@ static void kirin_handle_cpltimeout_work(struct work_struct *work)
 	kirin_pcie_notify_callback(pcie, KIRIN_PCIE_EVENT_CPL_TIMEOUT);
 }
 
-#ifdef CONFIG_KIRIN_PCIE_CPLTIMEOUT_INT
-static irqreturn_t kirin_pcie_cpltimeout_irq_handler(int irq, void *arg)
-{
-	struct kirin_pcie *pcie = arg;
-
-	PCIE_PR_ERR("Triggle CPL timeout irq[%d]", irq);
-	/* clear interrupt*/
-	kirin_elb_writel(pcie, CLR_COMP_TIMEOUT_BIT, SOC_PCIECTRL_CTRL11_ADDR);
-
-	atomic_set(&(pcie->is_enumerated), 0);
-	schedule_work(&pcie->handle_cpltimeout_work);
-
-	return IRQ_HANDLED;
-}
-#endif
-
 #ifdef CONFIG_KIRIN_PCIE_TEST
 static irqreturn_t kirin_pcie_intx_irq_handler(int irq, void *arg)
 {
@@ -1086,26 +1070,6 @@ static int __init kirin_add_pcie_port(struct kirin_pcie *pcie,
 		PCIE_PR_ERR("Failed to request %s irq", pcie->irq[IRQ_INTD].name);
 		return ret;
 	}
-#endif
-
-#ifdef CONFIG_KIRIN_PCIE_CPLTIMEOUT_INT
-	pcie->irq[IRQ_CPLTIMEOUT].num = platform_get_irq(pdev, IRQ_CPLTIMEOUT);
-	if (!pcie->irq[IRQ_CPLTIMEOUT].num) {
-		PCIE_PR_ERR("Failed to get [%s] irq ,num = [%d]", pcie->irq[IRQ_CPLTIMEOUT].name,
-			pcie->irq[IRQ_CPLTIMEOUT].num);
-		return -ENODEV;
-	}
-	PCIE_PR_INFO("Completion timeout interrupt number is %d", pcie->irq[IRQ_CPLTIMEOUT].num);
-
-	ret = devm_request_irq(&pdev->dev, (unsigned int)pcie->irq[IRQ_CPLTIMEOUT].num,
-				kirin_pcie_cpltimeout_irq_handler,
-				(unsigned long)IRQF_TRIGGER_RISING, pcie->irq[IRQ_CPLTIMEOUT].name, pcie);
-	if (ret) {
-		PCIE_PR_ERR("Failed to request cpltimeout irq");
-		return ret;
-	}
-
-	PCIE_PR_INFO("Request completion timeout interrupt done!");
 #endif
 
 	ret = devm_request_irq(&pdev->dev, pcie->irq[IRQ_LINKDOWN].num,
