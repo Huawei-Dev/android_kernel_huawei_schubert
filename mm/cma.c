@@ -40,10 +40,6 @@
 #include "cma.h"
 #include "internal.h"
 
-#ifdef CONFIG_HISI_CMA_DEBUG
-#include <linux/hisi/hisi_cma_debug.h>
-#endif
-
 struct cma cma_areas[MAX_CMA_AREAS];
 unsigned cma_area_count;
 static DEFINE_MUTEX(cma_mutex);
@@ -397,10 +393,6 @@ struct page *cma_alloc(struct cma *cma, size_t count, unsigned int align)
 				offset);
 		if (bitmap_no >= bitmap_maxno) {
 			mutex_unlock(&cma->lock);
-#ifdef CONFIG_HISI_CMA_DEBUG
-			pr_info("bitmap_no %ld >= bitmap_maxno %ld\n", bitmap_no, bitmap_maxno);
-			ret = -ENOMEM;
-#endif
 			break;
 		}
 		bitmap_set(cma->bitmap, bitmap_no, bitmap_count);
@@ -429,12 +421,6 @@ struct page *cma_alloc(struct cma *cma, size_t count, unsigned int align)
 		/* try again with a bit different memory target */
 		start = bitmap_no + mask + 1;
 	}
-
-#ifdef CONFIG_HISI_CMA_DEBUG
-	if (ret)
-		dump_cma_page(cma, count, mask, offset,
-				bitmap_maxno, bitmap_count);
-#endif
 
 	trace_cma_alloc(pfn, page, count, align);
 
