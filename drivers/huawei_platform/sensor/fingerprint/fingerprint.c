@@ -1465,11 +1465,6 @@ static int fingerprint_reset_gpio_init(struct fp_data* fingerprint)
 {
     int error = 0;
 
-#if defined (CONFIG_HISI_PARTITION_KIRIN970)
-#elif defined (CONFIG_HISI_PARTITION_LIBRA)
-#elif defined (CONFIG_HISI_PARTITION_CANCER)
-#elif defined CONFIG_HISI_PARTITION_TAURUS
-#else
     error = gpio_request(fingerprint->rst_gpio, "fingerprint_reset_gpio");
 
     if (error)
@@ -1519,7 +1514,6 @@ static int fingerprint_reset_gpio_init(struct fp_data* fingerprint)
 
 err_pinctrl_put:
     devm_pinctrl_put(fingerprint->pctrl);
-#endif
     return error;
 }
 
