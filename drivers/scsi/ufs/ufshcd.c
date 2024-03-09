@@ -79,8 +79,7 @@
 				 UTP_TASK_REQ_COMPL |\
 				 UTP_ERROR |\
 				 UFSHCD_ERROR_MASK)
-#if (defined CONFIG_SCSI_UFS_GEMINI || defined CONFIG_SCSI_UFS_ARIES || \
-	defined CONFIG_SCSI_UFS_LIBRA)
+#ifdef CONFIG_SCSI_UFS_GEMINI
 #define OLD_DEVICE_CONSTRAINT
 #endif
 
@@ -4932,11 +4931,7 @@ static void ufshcd_update_uic_reg_hist(struct ufs_uic_err_reg_hist *reg_hist,
 static void ufshcd_update_uic_error(struct ufs_hba *hba)
 {
 	u32 reg;
-#ifdef CONFIG_SCSI_UFS_KIRIN_LINERESET_CHECK
-	reg = hba->reg_uecpa;
-#else
 	reg = ufshcd_readl(hba, REG_UIC_ERROR_CODE_PHY_ADAPTER_LAYER);
-#endif
 	if (reg)
 		ufshcd_update_uic_reg_hist(&hba->ufs_stats.pa_err, reg);
 
@@ -6457,16 +6452,6 @@ static int ufshcd_probe_hba(struct ufs_hba *hba)
 	hba->force_host_reset = false;
 	/* set the state as operational after switching to desired gear */
 	hba->ufshcd_state = UFSHCD_STATE_OPERATIONAL;
-#ifdef CONFIG_SCSI_UFS_KIRIN_LINERESET_CHECK
-	if (hba->bg_task_enable && hba->vops && hba->vops->background_thread) {
-		if (!hba->background_task) {
-			hba->background_task = kthread_run(hba->vops->background_thread,
-				hba, "ufs_bg_thread");
-			if (IS_ERR(hba->background_task))
-				dev_err(hba->dev, "background_thread create fail! \r\n", __func__);
-		}
-	}
-#endif
 
 	/*
 	 * If we are in error handling context or in power management callbacks
