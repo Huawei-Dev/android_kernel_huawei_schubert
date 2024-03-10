@@ -856,15 +856,6 @@ config HISI_VIBRATOR
 	  To compile this driver as a module, choose M here: the module will be
 	  called hisi vibrator driver.
 
-config INPUT_HISI_POWERKEY
-	tristate "Hisilicon PMIC ONKEY support"
-	depends on ARCH_HISI || COMPILE_TEST
-	help
-	  Say Y to enable support for PMIC ONKEY.
-
-	  To compile this driver as a module, choose M here: the
-	  module will be called hisi_powerkey.
-
 config MINI_BUGREPORT
 	tristate "mini bugreport support"
 	help
