@@ -163,13 +163,6 @@ config HISI_PARTITION_HI3660
         help
            config partition for hi3660 platform
 
-config MMC_BLOCK_IOMMU_64BIT
-	bool "Block bounce limit"
-	depends on BLOCK
-	default n
-	help
-	Blk-setting will use address >4G for IOMMU.
-
 config HISI_PARTITION
 	bool "hisi partition"
 	default n
