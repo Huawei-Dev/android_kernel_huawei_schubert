@@ -76,7 +76,7 @@
 #include "internal.h"
 
 #ifdef CONFIG_HISI_SLOW_PATH_COUNT
-#include "hisi/slowpath_count.h"
+#include <chipset_common/mmonitor/slowpath_count.h>
 #endif
 
 #ifdef CONFIG_HUAWEI_UNMOVABLE_ISOLATE

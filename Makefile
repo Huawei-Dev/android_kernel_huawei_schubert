@@ -395,9 +395,6 @@ LINUXINCLUDE    := \
 		-I$(objtree)/include
 		
 LINUXINCLUDE += \
-		-I$(srctree)/arch/$(hdr-arch)/include/generated \
-		$(USERINCLUDE) \
-		-I$(srctree)/mm \
 		-I$(srctree)/include \
 		-I$(srctree)/include/linux/hisi \
 		-I$(srctree)/drivers \
