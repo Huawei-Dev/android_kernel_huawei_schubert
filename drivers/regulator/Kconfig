@@ -884,12 +884,6 @@ config DRV_HISI_IP_REGULATOR
 	help
 	  This driver provides system interior bus switch support for the IP regulator on the HiSilicon system.
 
-config HISI_IP_REGULATOR_IPC
-	tristate "HiSilicon system interior bus mtcmos IPC control"
-	depends on HISI_MAILBOX
-	help
-	  This driver provides system interior bus switch support for the IP regulator IPC on the HiSilicon system.
-
 config ATLA_IP_PLATFORM
 	tristate "HiSilicon ATLA system interior bus control platform switch"
 	depends on MFD_HISI_IP_CORE
@@ -920,17 +914,6 @@ config IP_PLATFORM_COMMON
         help
           This driver provides system interior bus switch for the IP regulator after ORLA AND PHON HiSilicon system.
 
-config REGULATOR_HI6250
-	tristate "HiSilicon system interior voltage PMIC"
-	help
-	  This driver provides support for the voltage regulators on the
-	  HiSilicon system interior voltage / Codec IC.
-
-config REGULATOR_IP_DEBUG
-	tristate "HiSilicon system regulator ip debug"
-	help
-	  This driver provides support for system ip control test.
-
 config HISI_REGULATOR_DEBUG
 	tristate "HiSilicon regulator debug info"
 	help
@@ -943,36 +926,10 @@ config HISI_REGULATOR
 	  This driver provides support for the voltage regulators on the
 	  HiSilicon Hisi PMU / Codec IC.
 
-config HISI_CHARGER_REGULATOR
-	tristate "Hisi Charger regulators"
-	depends on HISI_CHARGER_POWER
-	help
-	  This driver provides support for the voltage regulators on the
-	  Hisi Charger.
-
-config HISI_PMIC_DEBUG
-	depends on DEBUG_FS
-	bool "HiSilicon regulator and ip driver debug"
-	default n
-
 config HISI_REGULATOR_TRACE
 	tristate "Regulator Debug driver for REGULATOR TRACE"
 	depends on HISI_REGULATOR_DEBUG
 	help
 	  provides support for regulator trace.
 
-config HISI_CHARGER_REGULATOR
-	tristate "Hisi Charger regulators"
-	depends on HISI_CHARGER_POWER
-	help
-	  This driver provides support for the voltage regulators on the
-	  Hisi Charger.
-
-config HISI_REGULATOR_VIVOBUS
-        tristate "HiSilicon  vivobus regulator interface"
-        depends on PHOE_IP_PLATFORM
-        help
-          This driver provides support for vivobus regulator interface
-
 endif
-
