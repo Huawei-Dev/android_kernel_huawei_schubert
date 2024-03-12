@@ -51,9 +51,6 @@ static unsigned int hisi_bat_data_size = 0;	/* used to store number of bat types
 static int bat_param_status = 0;
 static int default_batt_id_index = -1;
 static int temp_points[] = { -20, -10, 0, 25, 40, 60 };
-#ifdef CONFIG_HISI_ASW
-struct device_node *g_np;
-#endif /* CONFIG_HISI_ASW */
 
 static int get_battery_data_by_id_volt(unsigned int id_index, unsigned int id_voltage)
 {
@@ -396,9 +393,6 @@ static int get_dat(struct device_node *np, struct hisi_coul_battery_data *pdat)
 	hisi_bat_info("default_rbatt_mohm is %d\n", pdat->default_rbatt_mohm);
 	/* vbat_max */
 	ret = of_property_read_u32(np, "vbat_max", (unsigned int *)(&(pdat->vbatt_max)));
-#ifdef CONFIG_HISI_ASW
-	pdat->vbatt_max_backup = pdat->vbatt_max;
-#endif /* CONFIG_HISI_ASW */
 	if (ret) {
 		bat_data_err("get vbat_max failed\n");
 		return -EINVAL;
@@ -732,9 +726,6 @@ static int hisi_battery_data_probe(struct platform_device *pdev)
 
 	bat_param_status = 0;
 	np = pdev->dev.of_node;
-#ifdef CONFIG_HISI_ASW
-	g_np = pdev->dev.of_node;
-#endif /* CONFIG_HISI_ASW */
 	if (NULL == np) {
 		bat_data_err("get device node failed\n");
 		goto fatal_err;
@@ -794,49 +785,13 @@ fatal_err:
 	return -EINVAL;
 }
 
-#ifdef CONFIG_HISI_ASW
-int asw_protect_load_batt_data(void)
-{
-	int i;
-	int retval;
-	struct device_node *bat_node = NULL;
-	struct device_node *np = g_np;
-
-	if (!np) {
-		bat_data_err("get device node failed\n");
-		return -EINVAL;
-	}
-
-	for (i = 0; ; ++i) {
-		bat_node = of_parse_phandle(np, "batt_name", i);
-		if (!bat_node) {
-			bat_data_err("bat_node [%d] failed\n", i);
-			break;
-		}
-
-		retval = get_dat(bat_node, p_data[i]);
-		if (retval) {
-			bat_data_err("get_dat[%d] failed\n", i);
-			return -EINVAL;
-		}
-	}
-
-	if (i == 0) {
-		bat_data_err("hisi_bat_data error!\n");
-		return -EINVAL;
-	}
-
-	return retval;
-}
-#endif /* CONFIG_HISI_ASW */
-
 static int hisi_battery_data_remove(struct platform_device *pdev)
 {
 	int i;
 	struct hisi_coul_battery_data **di = platform_get_drvdata(pdev);
 
 	if (di) {
-		for (i = 0; i < hisi_bat_data_size; ++i)/*lint !e574*/
+		for (i = 0; i < hisi_bat_data_size; ++i)
 			free_mem(&(di[i]));
 
 		kfree(di);

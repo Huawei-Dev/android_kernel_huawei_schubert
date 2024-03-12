@@ -986,10 +986,6 @@ int hisi_coul_convert_regval2uv(unsigned int reg_val)
 
 /****************************************************************************
   Function:     hisi_coul_convert_regval2temp
-  Description:  convert chip temperature regval to бу
-  Input:        reg_val
-  Output:       NA
-  Return:       бу
 ****************************************************************************/
 int hisi_coul_convert_regval2temp(unsigned int reg_val)
 {
@@ -1123,18 +1119,6 @@ int hisi_coul_chip_temperature(void)
     }
     return INVALID_TEMP;
 }
-
-#ifdef CONFIG_HISI_ASW
-int hisi_asw_refresh_fcc(void)
-{
-	/* declare the local variable of struct hisi_coul_ops */
-	LOCAL_HISI_COUL_OPS();
-
-	/* execute the operation of coul module */
-	HISI_EXEC_COUL_OP(asw_refresh_fcc);
-	return 0;
-}
-#endif /* CONFIG_HISI_ASW */
 
 /****************************************************************************
   Function:     hisi_coul_ops_unregister

@@ -3568,12 +3568,7 @@ static void charge_turn_on_charging(struct charge_device_info *di)
 	/* check vbus voltage ,if vbus is abnormal disable charge or abort from fcp */
 	charge_vbus_voltage_check(di);
 	/*set input current */
-#ifdef CONFIG_HISI_ASW
-	if (asw_get_iin_limit() == ASW_PROTECT_IIN_LIMIT)
-		charge_set_input_current(ASW_PROTECT_IIN_LIMIT);
-	else
-#endif /* CONFIG_HISI_ASW */
-		charge_set_input_current(di->input_current);
+	charge_set_input_current(di->input_current);
 	/*check if allow charging or not */
 	if (di->charge_current == CHARGE_CURRENT_0000_MA) {
 		di->charge_enable = FALSE;

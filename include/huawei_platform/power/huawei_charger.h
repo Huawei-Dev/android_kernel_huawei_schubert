@@ -653,15 +653,10 @@ extern struct blocking_notifier_head charge_wake_unlock_list;
 extern struct atomic_notifier_head fault_notifier_list;
 extern struct device *charge_dev;
 extern unsigned int get_pd_charge_flag(void);
-#ifdef CONFIG_HISI_ASW
-extern int asw_get_iin_limit(void);
-#else
 static inline int asw_get_iin_limit(void)
 {
 	return 0;
 }
-#endif /* CONFIG_HISI_ASW */
-
 int water_detect_ops_register(struct water_detect_ops *ops);
 void water_detect(void);
 int charge_ops_register(struct charge_device_ops *ops);
