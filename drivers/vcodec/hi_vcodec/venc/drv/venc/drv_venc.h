@@ -6,7 +6,7 @@
 #include "drv_venc_efl.h"
 #include "drv_venc_ioctl.h"
 #include "hi_unf_venc.h"
-#include <linux/hisi-iommu.h>
+#include <linux/hisi/hisi-iommu.h>
 #include <linux/iommu.h>
 
 #ifdef __cplusplus

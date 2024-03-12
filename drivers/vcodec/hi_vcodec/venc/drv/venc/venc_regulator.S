@@ -1685,7 +1685,7 @@ g_voltHold:
 	.file 122 "/mnt/disk/jenkins/ci/workspace/chipset_pipeline_release/opensource/component_code/vendor/huawei/extra/build/build_script/kirin_kernel_release/kernel/include/linux/scatterlist.h"
 	.file 123 "/mnt/disk/jenkins/ci/workspace/chipset_pipeline_release/opensource/component_code/vendor/huawei/extra/build/build_script/kirin_kernel_release/kernel/include/linux/dma-direction.h"
 	.file 124 "/mnt/disk/jenkins/ci/workspace/chipset_pipeline_release/opensource/component_code/vendor/huawei/extra/build/build_script/kirin_kernel_release/kernel/drivers/vcodec/hi_vcodec/venc/drv/include/hi_drv_mem.h"
-	.file 125 "/mnt/disk/jenkins/ci/workspace/chipset_pipeline_release/opensource/component_code/vendor/huawei/extra/build/build_script/kirin_kernel_release/kernel/include/linux/hisi-iommu.h"
+	.file 125 "/mnt/disk/jenkins/ci/workspace/chipset_pipeline_release/opensource/component_code/vendor/huawei/extra/build/build_script/kirin_kernel_release/kernel/include/linux/hisi/hisi-iommu.h"
 	.file 126 "/mnt/disk/jenkins/ci/workspace/chipset_pipeline_release/opensource/component_code/vendor/huawei/extra/build/build_script/kirin_kernel_release/kernel/drivers/vcodec/hi_vcodec/venc/drv/include/hi_drv_video.h"
 	.file 127 "/mnt/disk/jenkins/ci/workspace/chipset_pipeline_release/opensource/component_code/vendor/huawei/extra/build/build_script/kirin_kernel_release/kernel/drivers/vcodec/hi_vcodec/venc/drv/venc/drv_venc_efl.h"
 	.file 128 "/mnt/disk/jenkins/ci/workspace/chipset_pipeline_release/opensource/component_code/vendor/huawei/extra/build/build_script/kirin_kernel_release/kernel/drivers/vcodec/hi_vcodec/venc/drv/venc/drv_venc_buf_mng.h"

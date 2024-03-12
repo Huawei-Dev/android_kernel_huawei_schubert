@@ -13,7 +13,6 @@
 #ifndef HISI_FB_H
 #define HISI_FB_H
 
-/*lint -e551 -e551*/
 #include <linux/console.h>
 #include <linux/uaccess.h>
 #include <linux/leds.h>
@@ -65,12 +64,10 @@
 #include <linux/file.h>
 #include <linux/dma-buf.h>
 #include <linux/genalloc.h>
-#include <linux/hisi-iommu.h>
+#include <linux/hisi/hisi-iommu.h>
 
 #include <linux/atomic.h>
 
-/*lint +e551 +e551*/
-//#include <linux/huawei/hisi_irq_affinity.h>
 #include "hisi_dss_ion.h"
 #include "hisi_dss_iommu.h"
 #include "hisi_fb_def.h"

@@ -3,7 +3,7 @@
 #include "platform.h"
 #include "regulator.h"
 
-#include <linux/hisi-iommu.h>   //for struct iommu_domain_data
+#include <linux/hisi/hisi-iommu.h>   //for struct iommu_domain_data
 #include <linux/iommu.h>             //for struct iommu_domain
 #include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
