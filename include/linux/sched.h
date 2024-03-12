@@ -1596,10 +1596,6 @@ struct ravg {
 	u32 prev_window_cpu[NR_CPUS];
 	u32 curr_window, prev_window;
 	u16 active_windows;
-#ifdef CONFIG_HISI_RTG
-	u64 curr_window_load, prev_window_load;
-	u64 curr_window_exec, prev_window_exec;
-#endif
 };
 #endif
 
@@ -1856,11 +1852,6 @@ struct task_struct {
 	 */
 	u32 init_load_pct;
 	u64 last_sleep_ts;
-#endif
-
-#ifdef CONFIG_HISI_RTG
-	struct related_thread_group *grp;
-	struct list_head grp_list;
 #endif
 
 #ifdef CONFIG_CGROUP_SCHED
