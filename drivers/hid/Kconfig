@@ -973,12 +973,6 @@ config HID_ALPS
 	Say Y here if you have a Alps touchpads over i2c-hid or usbhid
 	and want support for its special functionalities.
 
-config HID_HUAWEI
-	tristate "HUAWEI TypeC Headset"
-	depends on HID
-	---help---
-	Support for Huawei TypeC headset.
-
 endmenu
 
 endif # HID
