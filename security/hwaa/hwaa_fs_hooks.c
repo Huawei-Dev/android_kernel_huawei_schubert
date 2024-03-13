@@ -3,7 +3,7 @@
 #include <linux/spinlock.h>
 #include <linux/slab.h>
 #include <linux/fs.h>
-#include <linux/fscrypt_common.h>
+#include <linux/fscrypt.h>
 #include <linux/rwsem.h>
 #include <uapi/linux/stat.h>
 #include "huawei_platform/hwaa/hwaa_limits.h"
