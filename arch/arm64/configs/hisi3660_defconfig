@@ -3736,7 +3736,6 @@ CONFIG_USB_DWC3_OTG=y
 # CONFIG_USB_DWC2 is not set
 # CONFIG_USB_CHIPIDEA is not set
 # CONFIG_USB_ISP1760 is not set
-# CONFIG_USB_SUSB_HDRC is not set
 # CONFIG_USB_DEBUG_NODE is not set
 
 #
