@@ -864,15 +864,4 @@ config HISI_VIBRATOR
 
 	  To compile this driver as a module, choose M here: the module will be
 	  called hisi vibrator driver.
-
-config MINI_BUGREPORT
-	tristate "mini bugreport support"
-	help
-	  Say Y here if we want to enable minibugreport.
-
-config MINI_BUGREPORT_ENG
-         tristate "eng version mini bugreport support"
-         depends on MINI_BUGREPORT
-         help
-           Say Y here if we want to enable minibugreport in eng version.
 endif

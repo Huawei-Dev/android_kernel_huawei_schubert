@@ -2,16 +2,6 @@
 # Makefile for the input misc drivers.
 #
 
-ifeq ($(CONFIG_HISI_POWERKEY_SSI),y)
-ifeq ($(TARGET_BUILD_VARIANT),eng)
-	CONFIG_INPUT_KEYCHORD := y
-	ccflags-y += -DINPUT_MINI_BUGREPORT_TRIGGER
-endif
-ifeq ($(ENABLE_MINI_BUGREPORT),true)
-	CONFIG_INPUT_KEYCHORD := y
-	ccflags-y += -DINPUT_MINI_BUGREPORT_TRIGGER
-endif
-endif
 # Each configuration option enables a list of files.
 
 obj-$(CONFIG_INPUT_88PM860X_ONKEY)	+= 88pm860x_onkey.o
@@ -92,4 +82,3 @@ obj-$(CONFIG_INPUT_XEN_KBDDEV_FRONTEND)	+= xen-kbdfront.o
 obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
 obj-$(CONFIG_INPUT_IDEAPAD_SLIDEBAR)	+= ideapad_slidebar.o
 obj-$(CONFIG_HISI_VIBRATOR)		+= hisi_vibrator.o
-obj-$(CONFIG_MINI_BUGREPORT)		+= mini_bugreport_notifier.o
