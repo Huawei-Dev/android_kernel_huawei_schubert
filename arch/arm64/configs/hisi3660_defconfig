@@ -4404,7 +4404,6 @@ CONFIG_MALI_GPU_DRM_HI3660=y
 # Performance monitor support
 #
 CONFIG_ARM_PMU=y
-# CONFIG_ARM_DSU_PMU is not set
 CONFIG_RAS=y
 # CONFIG_THUNDERBOLT is not set
 
