@@ -11,9 +11,5 @@ obj-$(CONFIG_HUAWEI_DSM)	+= power_dsm/
 obj-$(CONFIG_HUAWEI_POWER_THERMALZONE)	+= power_thermalzone/
 obj-$(CONFIG_HUAWEI_SOC_CONTROL) += hardware_monitor/
 
-ifeq ($(HLTHERM_RUNTEST),true)
-CFLAGS_KERNEL += -DCONFIG_HLTHERM_RUNTEST
-endif
-
 obj-$(CONFIG_HUAWEI_WATER_CHECK) += water_check/
 obj-$(CONFIG_DOZE_FILTER)	+= wifi_filter/

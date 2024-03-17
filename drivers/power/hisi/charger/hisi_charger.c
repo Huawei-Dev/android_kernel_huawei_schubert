@@ -1589,16 +1589,12 @@ static ssize_t charge_sysfs_store(struct device *dev,
           include iin_thermal/ichg_thermal/iin_runningtest/ichg_runningtest node
         */
     case CHARGE_SYSFS_IIN_THERMAL:
-#ifndef CONFIG_HLTHERM_RUNTEST
 		if(sysfs_iin_thl_set_input_current(di, buf))
             return -EINVAL;
-#endif
         break;
     case CHARGE_SYSFS_ICHG_THERMAL:
-#ifndef CONFIG_HLTHERM_RUNTEST
         if(sysfs_ichg_thl_set_charge_current(di, buf))
             return -EINVAL;
-#endif
         break;
     case CHARGE_SYSFS_IIN_RUNNINGTEST:
         if(sysfs_iin_rt_set_input_current(di, buf))

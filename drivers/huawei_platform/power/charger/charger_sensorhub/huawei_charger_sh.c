@@ -1193,7 +1193,6 @@ static ssize_t charge_sysfs_store(struct device *dev,
 			   pConfigOnDDr->g_di.sysfs_data.adc_conv_rate);
 		break;
 	case CHARGE_SYSFS_IIN_THERMAL:
-#ifndef CONFIG_HLTHERM_RUNTEST
 		if ((strict_strtol(buf, 10, &val) < 0) || (val < 0) || (val > 3000))
 			return -EINVAL;
 		if (!pConfigOnDDr->g_di.is_dual_charger) {
@@ -1226,10 +1225,8 @@ static ssize_t charge_sysfs_store(struct device *dev,
 				   pConfigOnDDr->g_di.sysfs_data.iin_thl_main);
 		}
 		notify_sensorhub(CHARGE_SYSFS_IIN_THERMAL, 0);
-#endif
 		break;
 	case CHARGE_SYSFS_ICHG_THERMAL:
-#ifndef CONFIG_HLTHERM_RUNTEST
 		if ((strict_strtol(buf, 10, &val) < 0) || (val < 0) || (val > 3000))
 			return -EINVAL;
 		if (!pConfigOnDDr->g_di.is_dual_charger) {
@@ -1269,10 +1266,8 @@ static ssize_t charge_sysfs_store(struct device *dev,
 				   pConfigOnDDr->g_di.sysfs_data.ichg_thl_main);
 		}
 		notify_sensorhub(CHARGE_SYSFS_ICHG_THERMAL, 0);
-#endif
 		break;
 	case CHARGE_SYSFS_IIN_THERMAL_AUX:
-#ifndef CONFIG_HLTHERM_RUNTEST
 		if (!pConfigOnDDr->g_di.is_dual_charger)
 			break;
 		if ((strict_strtol(buf, 10, &val) < 0) || (val < 0) || (val > 3000))
@@ -1292,10 +1287,8 @@ static ssize_t charge_sysfs_store(struct device *dev,
 		notify_sensorhub(CHARGE_SYSFS_IIN_THERMAL_AUX, 0);
 		hwlog_info("THERMAL set input current aux = %d\n",
 			   pConfigOnDDr->g_di.sysfs_data.iin_thl_aux);
-#endif
 		break;
 	case CHARGE_SYSFS_ICHG_THERMAL_AUX:
-#ifndef CONFIG_HLTHERM_RUNTEST
 		if (!pConfigOnDDr->g_di.is_dual_charger)
 			break;
 		if ((strict_strtol(buf, 10, &val) < 0) || (val < 0) || (val > 3000))
@@ -1320,7 +1313,6 @@ static ssize_t charge_sysfs_store(struct device *dev,
 		notify_sensorhub(CHARGE_SYSFS_ICHG_THERMAL_AUX, 0);
 		hwlog_info("THERMAL set charge current aux = %d\n",
 			   pConfigOnDDr->g_di.sysfs_data.ichg_thl_aux);
-#endif
 		break;
 	case CHARGE_SYSFS_IIN_RUNNINGTEST:
 		if ((strict_strtol(buf, 10, &val) < 0) || (val < 0) || (val > 3000))
@@ -1687,11 +1679,7 @@ static int charge_probe(struct platform_device *pdev)
 	wake_lock_init(&charge_lock, WAKE_LOCK_SUSPEND, "charge_wakelock");
 	wake_lock_init(&wlock, WAKE_LOCK_SUSPEND, "sensorhub_wakelock");
 
-#ifndef CONFIG_HLTHERM_RUNTEST
 	di->is_hltherm_runtest_mode = 0;
-#else
-	di->is_hltherm_runtest_mode = 1;
-#endif
 	di->charge_fault = CHARGE_FAULT_NON;
 	di->check_full_count = 0;
 	charge_parse_dts(di);
