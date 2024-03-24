@@ -137,22 +137,14 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	if (min_score_adj == OOM_SCORE_ADJ_MAX + 1) {
 		lowmem_print(5, "lowmem_scan %lu, %x, return 0\n",
 			     sc->nr_to_scan, sc->gfp_mask);
-#ifdef CONFIG_HARMONY_LOWMEMORYKILLER_OPTIMIZE
-		return SHRINK_STOP;
-#else
 		return 0;
-#endif
 	}
 
 	selected_oom_score_adj = min_score_adj;
 
 	if (atomic_inc_return(&atomic_lmk) > 1) {
 		atomic_dec(&atomic_lmk);
-#ifdef CONFIG_HARMONY_LOWMEMORYKILLER_OPTIMIZE
-		return SHRINK_STOP;
-#else
 		return 0;
-#endif
 	}
 
 	rcu_read_lock();
@@ -173,11 +165,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 				task_unlock(p);
 				rcu_read_unlock();
 				atomic_dec(&atomic_lmk);
-#ifdef CONFIG_HARMONY_LOWMEMORYKILLER_OPTIMIZE
-				return SHRINK_STOP;
-#else
 				return 0;
-#endif
 			} else {
 				hisi_lowmem_dbg_timeout(tsk, p);
 			}
@@ -254,11 +242,6 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 
 	rcu_read_unlock();
 	atomic_dec(&atomic_lmk);
-
-#ifdef CONFIG_HARMONY_LOWMEMORYKILLER_OPTIMIZE
-	if (!rem)
-		rem = SHRINK_STOP;
-#endif
 
 	return rem;
 }

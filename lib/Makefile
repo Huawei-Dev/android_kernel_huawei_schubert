@@ -95,9 +95,6 @@ obj-$(CONFIG_LIBCRC32C)	+= libcrc32c.o
 obj-$(CONFIG_CRC8)	+= crc8.o
 obj-$(CONFIG_XXHASH)	+= xxhash.o
 obj-$(CONFIG_GENERIC_ALLOCATOR) += genalloc.o
-ifeq ($(BUILD_WITH_HARMONY), true)
-CFLAGS_genalloc.o += -DCONFIG_HARMONY_GENALLOC
-endif
 
 obj-$(CONFIG_842_COMPRESS) += 842/
 obj-$(CONFIG_842_DECOMPRESS) += 842/
@@ -108,14 +105,8 @@ obj-$(CONFIG_BCH) += bch.o
 obj-$(CONFIG_LZO_COMPRESS) += lzo/
 obj-$(CONFIG_LZO_DECOMPRESS) += lzo/
 obj-$(CONFIG_LZ4_COMPRESS) += lz4/
-ifeq ($(BUILD_WITH_HARMONY), true)
-	obj-$(CONFIG_LZ4M_COMPRESS) += lz4m/
-endif
 obj-$(CONFIG_LZ4HC_COMPRESS) += lz4/
 obj-$(CONFIG_LZ4_DECOMPRESS) += lz4/
-ifeq ($(BUILD_WITH_HARMONY), true)
-	obj-$(CONFIG_LZ4M_DECOMPRESS) += lz4m/
-endif
 obj-$(CONFIG_ZSTD_COMPRESS) += zstd/
 obj-$(CONFIG_ZSTD_DECOMPRESS) += zstd/
 obj-$(CONFIG_XZ_DEC) += xz/

@@ -2923,11 +2923,7 @@ static bool shrink_node(pg_data_t *pgdat, struct scan_control *sc)
 
 			shrink_node_memcg(pgdat, memcg, sc, &lru_pages);
 			node_lru_pages += lru_pages;
-#if defined(CONFIG_HUAWEI_RCC) && defined(CONFIG_HARMONY_PERFORMANCE)
-			if (memcg && sc->rcc_mode != RCC_MODE_ANON)
-#else
 			if (memcg)
-#endif
 				shrink_slab(sc->gfp_mask, pgdat->node_id,
 					    memcg, sc->nr_scanned - scanned,
 					    lru_pages);
@@ -2958,11 +2954,7 @@ static bool shrink_node(pg_data_t *pgdat, struct scan_control *sc)
 		 * Shrink the slab caches in the same proportion that
 		 * the eligible LRU pages were scanned.
 		 */
-#if defined(CONFIG_HUAWEI_RCC) && defined(CONFIG_HARMONY_PERFORMANCE)
-		if (global_reclaim(sc) && sc->rcc_mode != RCC_MODE_ANON)
-#else
 		if (global_reclaim(sc))
-#endif
 			shrink_slab(sc->gfp_mask, pgdat->node_id, NULL,
 				    sc->nr_scanned - nr_scanned,
 				    node_lru_pages);
@@ -3147,9 +3139,6 @@ retry:
 	delayacct_freepages_start();
 
 	if (global_reclaim(sc)) {
-#if defined(CONFIG_HARMONY_PERFORMANCE) && defined(CONFIG_HUAWEI_RCC)
-		if (!sc->rcc_mode)
-#endif
 		__count_zid_vm_events(ALLOCSTALL, sc->reclaim_idx, 1);
 	}
 
@@ -4352,15 +4341,11 @@ int try_to_free_pages_ex(int nr_pages, int mode)
 		.rcc_mode = mode,
 		.target_mem_cgroup = NULL,
 		.nodemask = NULL,
-#ifdef CONFIG_HARMONY_PERFORMANCE
-		.may_thrash = 1,
-#endif
 	};
 	struct zonelist *zonelist = node_zonelist(numa_node_id(), mask);
 
 	reclaimed = do_try_to_free_pages(zonelist, &sc);
 
-#ifndef CONFIG_HARMONY_PERFORMANCE
 #if KERNEL_VERSION(4, 9, 0) <= LINUX_VERSION_CODE
 	{
 	    enum vm_event_item item = ALLOCSTALL_NORMAL - ZONE_NORMAL + sc.reclaim_idx;
@@ -4370,7 +4355,6 @@ int try_to_free_pages_ex(int nr_pages, int mode)
 #else
 	if (global_reclaim(&sc) && this_cpu_read(vm_event_states.event[ALLOCSTALL]))
 	    this_cpu_dec(vm_event_states.event[ALLOCSTALL]);
-#endif
 #endif
 
 	return reclaimed;
