@@ -2937,10 +2937,6 @@ struct cfg80211_ops {
 				    struct wireless_dev *wdev);
 	void	(*stop_p2p_device)(struct wiphy *wiphy,
 				   struct wireless_dev *wdev);
-#ifdef CONFIG_HW_GET_P2P_TX_RATE
-	int	(*get_p2p_tx_rate)(struct wiphy *wiphy, struct net_device *dev,
-			       struct station_info *sinfo);
-#endif /* CONFIG_HW_GET_P2P_TX_RATE */
 
 	int	(*set_mac_acl)(struct wiphy *wiphy, struct net_device *dev,
 			       const struct cfg80211_acl_data *params);

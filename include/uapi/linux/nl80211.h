@@ -1080,11 +1080,6 @@ enum nl80211_commands {
 #if (defined (CONFIG_HW_WIFI_MSS) || defined (CONFIG_HW_WIFI_RSSI))
 	NL80211_CMD_VDR_COMMON = 203,
 #endif
-#ifdef CONFIG_HW_GET_P2P_TX_RATE
-        NL80211_CMD_GET_P2P_TX_RATE = 204,
-#endif /* CONFIG_HW_GET_P2P_TX_RATE */
-	/* add new commands above here */
-
 	/* used to define NL80211_CMD_MAX below */
 	__NL80211_CMD_AFTER_LAST,
 	NL80211_CMD_MAX = __NL80211_CMD_AFTER_LAST - 1

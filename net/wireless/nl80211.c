@@ -4507,66 +4507,6 @@ static int nl80211_get_station(struct sk_buff *skb, struct genl_info *info)
 
 	return genlmsg_reply(msg, info);
 }
-#ifdef CONFIG_HW_GET_P2P_TX_RATE
-static int nl80211_send_p2p_tx_rate(struct sk_buff *msg, u32 cmd, u32 portid,
-				u32 seq, int flags,
-				struct cfg80211_registered_device *rdev,
-				struct net_device *dev,
-				struct station_info *sinfo)
-{
-	void *hdr = nl80211hdr_put(msg, portid, seq, flags, cmd);
-	if (!hdr)
-		return -1;
-
-	if (nla_put_u32(msg, NL80211_ATTR_IFINDEX, dev->ifindex) ||
-	    nla_put_u32(msg, NL80211_ATTR_GENERATION, sinfo->generation))
-		goto nla_put_failure;
-
-	if (sinfo->filled & BIT(NL80211_STA_INFO_TX_BITRATE)) {
-		if (!nl80211_put_sta_rate(msg, &sinfo->txrate,
-					  NL80211_STA_INFO_TX_BITRATE))
-			goto nla_put_failure;
-	}
-
-	genlmsg_end(msg, hdr);
-	return 0;
-
- nla_put_failure:
-	genlmsg_cancel(msg, hdr);
-	return -EMSGSIZE;
-}
-
-static int nl80211_get_p2p_tx_rate(struct sk_buff *skb, struct genl_info *info)
-{
-	struct cfg80211_registered_device *rdev = info->user_ptr[0];
-	struct net_device *dev = info->user_ptr[1];
-	struct station_info sinfo;
-	struct sk_buff *msg = NULL;
-	int err = -1;
-
-	memset(&sinfo, 0, sizeof(sinfo));
-
-	if (!rdev->ops->get_p2p_tx_rate)
-		return -EOPNOTSUPP;
-
-	err = rdev->ops->get_p2p_tx_rate(&rdev->wiphy, dev, &sinfo);
-	if (err)
-		return err;
-
-	msg = nlmsg_new(NLMSG_DEFAULT_SIZE, GFP_KERNEL);
-	if (!msg)
-		return -ENOMEM;
-
-	if (nl80211_send_p2p_tx_rate(msg, NL80211_CMD_GET_P2P_TX_RATE,
-				 info->snd_portid, info->snd_seq, 0,
-				 rdev, dev, &sinfo) < 0) {
-		nlmsg_free(msg);
-		return -ENOBUFS;
-	}
-
-	return genlmsg_reply(msg, info);
-}
-#endif /* CONFIG_HW_GET_P2P_TX_RATE */
 
 int cfg80211_check_station_change(struct wiphy *wiphy,
 				  struct station_parameters *params,
@@ -12747,15 +12687,6 @@ static const struct genl_ops nl80211_ops[] = {
 		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
 				  NL80211_FLAG_NEED_RTNL,
 	},
-#ifdef CONFIG_HW_GET_P2P_TX_RATE
-	{
-		.cmd = NL80211_CMD_GET_P2P_TX_RATE,
-		.doit = nl80211_get_p2p_tx_rate,
-		.policy = nl80211_policy,
-		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-				  NL80211_FLAG_NEED_RTNL,
-	},
-#endif /* CONFIG_HW_GET_P2P_TX_RATE */
 };
 
 /* notification functions */
