@@ -38,7 +38,6 @@
 #include <trace/events/cma.h>
 
 #include "cma.h"
-#include "internal.h"
 
 struct cma cma_areas[MAX_CMA_AREAS];
 unsigned cma_area_count;
